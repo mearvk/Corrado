@@ -12,6 +12,10 @@ and USB drivers (in both **C** and **C++**) for all three.
 > Always back up the stock image first and verify every write. See
 > [`docs/HARDWARE.md`](docs/HARDWARE.md).
 
+**Background reading:** [`CORRADO.md`](CORRADO.md) is a full reference on the
+car, its engines, the ECU/EPROM, and an **HP-evaluation chart** for EPROM
+tuning (raising boost and fuel pressure for more power/torque).
+
 ## The target chip
 
 The Corrado ECU calibration lives in a socketed 28-pin **27C256** EPROM
