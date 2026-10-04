@@ -14,6 +14,11 @@ into 1995, and the 1996 entry here covers the final run-out/other markets).
 
 ## Contents
 
+**Regional (EU vs. US):** market-specific audio notes are sorted under
+[`regional/europe/`](regional/europe/) (VW Alpha/Beta/Gamma, coded radios,
+European band plan) and [`regional/america/`](regional/america/) (Blaupunkt
+units, US band plan). The files below are the region-neutral reference.
+
 | File | What's in it |
 |------|--------------|
 | [`SYSTEMS.md`](SYSTEMS.md) | Factory head units (Alpha/Beta/Gamma, Blaupunkt), what was standard vs. premium, speaker sizes & locations, year-by-year notes. |

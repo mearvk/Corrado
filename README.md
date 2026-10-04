@@ -25,6 +25,11 @@ includes `fetch-eproms.sh` to pull real community G60 dumps.
 factory stereo systems (standard vs. premium head units and speakers) and
 audio wiring, with SVG wiring/speaker-layout diagrams.
 
+**Regional (EU vs. US):** [`regional/`](regional/) indexes the
+European-vs-American differences, with region-specific docs sorted under
+each area's `regional/europe/` and `regional/america/` folders (currently
+EPROM/ECU and audio).
+
 ## The target chip
 
 The Corrado ECU calibration lives in a socketed 28-pin **27C256** EPROM

@@ -34,6 +34,16 @@ tool, the XDF/offset docs and tests all work without any third-party data.
 
 ---
 
+## Regional (European vs. American)
+
+Engine calibrations differ by market — most notably the **VR6** (Europe
+**2.9 L ABV / 190 PS** vs. North America **2.8 L AAA / 178 hp**), plus
+California-vs-federal emissions calibrations in the US. Region-specific ECU
+notes are sorted under:
+
+- [`regional/europe/`](regional/europe/) — European-market ECUs/calibrations
+- [`regional/america/`](regional/america/) — US/Canada ECUs/calibrations
+
 ## Per-year folders
 
 The stock calibration differs by **engine/ECU**, which maps to model-year
