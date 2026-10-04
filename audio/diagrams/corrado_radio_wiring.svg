@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="560" viewBox="0 0 820 560" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Corrado factory radio wiring schematic (reference, verify on car) -->
+  <style>
+    .title { font-size: 20px; font-weight: 700; fill: #1a1a1a; }
+    .sub   { font-size: 12px; fill: #555; }
+    .box   { fill: #f4f6f8; stroke: #334; stroke-width: 1.5; rx: 6; }
+    .lbl   { font-size: 13px; fill: #1a1a1a; }
+    .pin   { font-size: 12px; fill: #222; }
+    .note  { font-size: 11px; fill: #666; }
+    .pwr   { stroke: #d33; stroke-width: 2.5; fill: none; }
+    .gnd   { stroke: #555; stroke-width: 2.5; fill: none; }
+    .sig   { stroke: #27a; stroke-width: 2; fill: none; }
+    .spk   { stroke: #2a7; stroke-width: 2; fill: none; }
+    .amp   { stroke: #b60; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+  </style>
+
+  <text x="24" y="34" class="title">VW Corrado — Factory Radio Wiring (1990–1996)</text>
+  <text x="24" y="54" class="sub">Single-DIN head unit, VW/ISO connector family (pre-Quadlock). Colours vary by market — meter before connecting.</text>
+
+  <!-- Head unit -->
+  <rect x="40" y="90" width="220" height="300" class="box"/>
+  <text x="150" y="114" text-anchor="middle" class="lbl" font-weight="700">HEAD UNIT</text>
+  <text x="150" y="132" text-anchor="middle" class="note">Alpha / Beta / Gamma / Blaupunkt</text>
+
+  <!-- Head unit pins -->
+  <text x="56" y="162" class="pin">+12V constant</text>
+  <text x="56" y="188" class="pin">+12V switched</text>
+  <text x="56" y="214" class="pin">Ground</text>
+  <text x="56" y="240" class="pin">Illumination</text>
+  <text x="56" y="266" class="pin">Ant / Amp remote</text>
+  <text x="56" y="300" class="pin">Spk FL +/-</text>
+  <text x="56" y="322" class="pin">Spk FR +/-</text>
+  <text x="56" y="344" class="pin">Spk RL +/-</text>
+  <text x="56" y="366" class="pin">Spk RR +/-</text>
+
+  <!-- Power rails -->
+  <path class="pwr" d="M260 158 H330 V150 H410"/>
+  <text x="414" y="154" class="pin" fill="#d33">+12V constant — Red/White (battery, keeps code/presets)</text>
+  <path class="pwr" d="M260 184 H410"/>
+  <text x="414" y="188" class="pin" fill="#d33">+12V switched — from fuse box / ignition</text>
+  <path class="gnd" d="M260 210 H410"/>
+  <text x="414" y="214" class="pin" fill="#555">Ground — Brown (chassis)</text>
+  <path class="sig" d="M260 236 H410"/>
+  <text x="414" y="240" class="pin" fill="#27a">Illumination — Gray/Blue (dash dimmer)</text>
+  <path class="sig" d="M260 262 H410"/>
+  <text x="414" y="266" class="pin" fill="#27a">Power-antenna / amp turn-on — White/Blue</text>
+
+  <!-- Speakers block (standard 4-speaker) -->
+  <rect x="560" y="300" width="230" height="150" class="box"/>
+  <text x="675" y="324" text-anchor="middle" class="lbl" font-weight="700">SPEAKERS (standard: 4)</text>
+  <text x="675" y="344" text-anchor="middle" class="note">Dash 3.5" (front) + 4×6" (rear)</text>
+  <text x="575" y="372" class="pin">Front Left  (dash)</text>
+  <text x="575" y="394" class="pin">Front Right (dash)</text>
+  <text x="575" y="416" class="pin">Rear Left   (panel)</text>
+  <text x="575" y="438" class="pin">Rear Right  (panel)</text>
+
+  <path class="spk" d="M260 300 H420 V372 H560"/>
+  <path class="spk" d="M260 322 H440 V394 H560"/>
+  <path class="spk" d="M260 344 H460 V416 H560"/>
+  <path class="spk" d="M260 366 H480 V438 H560"/>
+  <text x="300" y="294" class="note" fill="#2a7">Bridged (BTL) +/- pairs — never ground a speaker lead</text>
+
+  <!-- Premium amp (dashed) -->
+  <rect x="560" y="150" width="230" height="110" class="box" stroke-dasharray="5 4"/>
+  <text x="675" y="174" text-anchor="middle" class="lbl" font-weight="700" fill="#b60">PREMIUM: external AMP</text>
+  <text x="675" y="194" text-anchor="middle" class="note">"Sound System" option (trunk/behind trim)</text>
+  <text x="675" y="214" text-anchor="middle" class="note">own +12V const/sw + GND;</text>
+  <text x="675" y="230" text-anchor="middle" class="note">remote-on from White/Blue</text>
+  <text x="675" y="250" text-anchor="middle" class="note">drives door speakers + tweeters</text>
+  <path class="amp" d="M410 262 H520 V205 H560"/>
+
+  <!-- legend -->
+  <text x="24" y="486" class="sub" font-weight="700">Legend</text>
+  <line x1="24" y1="500" x2="60" y2="500" class="pwr"/><text x="66" y="504" class="note">+12V power</text>
+  <line x1="150" y1="500" x2="186" y2="500" class="gnd"/><text x="192" y="504" class="note">ground</text>
+  <line x1="250" y1="500" x2="286" y2="500" class="sig"/><text x="292" y="504" class="note">illum / trigger</text>
+  <line x1="400" y1="500" x2="436" y2="500" class="spk"/><text x="442" y="504" class="note">speaker</text>
+  <line x1="520" y1="500" x2="556" y2="500" class="amp"/><text x="562" y="504" class="note">premium amp path</text>
+
+  <text x="24" y="534" class="note">Reference schematic — not an official VW diagram. Colours/pins vary by market and build date; verify on your vehicle.</text>
+</svg>

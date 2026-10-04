@@ -21,6 +21,10 @@ G60 (Digifant) and VR6 (Motronic) image layouts with hex excerpts, ships
 MIT-licensed reference `.bin` images the tool can read/write/checksum, and
 includes `fetch-eproms.sh` to pull real community G60 dumps.
 
+**Factory audio:** [`audio/`](audio/) documents the Corrado's 1990–1996
+factory stereo systems (standard vs. premium head units and speakers) and
+audio wiring, with SVG wiring/speaker-layout diagrams.
+
 ## The target chip
 
 The Corrado ECU calibration lives in a socketed 28-pin **27C256** EPROM
