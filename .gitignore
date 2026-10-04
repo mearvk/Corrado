@@ -8,8 +8,9 @@
 # Chip dumps / tunes (keep them out of version control by default)
 *.bin
 !docs/**/*.bin
-# ...but DO track our own MIT-licensed reference images.
+# ...but DO track our own MIT-licensed reference images (any depth).
 !eproms/*_REFERENCE.bin
+!eproms/**/*_REFERENCE.bin
 # NEVER track real community dumps fetched by fetch-eproms.sh (unlicensed).
 /eproms/real/
 

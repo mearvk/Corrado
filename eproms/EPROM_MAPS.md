@@ -34,6 +34,29 @@ tool, the XDF/offset docs and tests all work without any third-party data.
 
 ---
 
+## Per-year folders
+
+The stock calibration differs by **engine/ECU**, which maps to model-year
+ranges — not every single year has a unique image. Each `eproms/<year>/`
+folder holds the reference image(s) appropriate for that year:
+
+| Year(s)            | ECU                | VW part    | Reference bin(s) in `eproms/<year>/` |
+|--------------------|--------------------|------------|--------------------------------------|
+| 1990, 1991         | Digifant (G60)     | 037906022B | `Corrado_<yr>_G60_Digifant_REFERENCE.bin` |
+| **1992**           | **both** (G60 + VR6 introduced) | — | G60 **and** VR6 reference bins |
+| 1993–1996          | Motronic (VR6)     | 021906259  | `Corrado_<yr>_VR6_Motronic_REFERENCE.bin` |
+
+So 1990 and 1991 share the G60 calibration, 1993–1996 share the VR6
+calibration, and 1992 (the transition year, when the VR6 arrived alongside
+the G60) carries both. The files are copies of the two canonical reference
+images in this directory, named per year for convenience.
+
+> These remain **synthetic MIT reference** images (see below). Real stock
+> calibrations also varied by market (Euro/US/California), transmission and
+> ECU revision within a year — always confirm against your own ECU label
+> and a matching TunerPro/WinOLS XDF. Use `fetch-eproms.sh` for real
+> community G60 dumps.
+
 ## 1. Device
 
 Both ECUs store the calibration in a **27C256**-class 28-pin DIP EPROM:
