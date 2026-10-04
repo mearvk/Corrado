@@ -31,7 +31,7 @@ endif
 CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR) $(PKG_CFLAGS)
 LDLIBS    += $(PKG_LIBS)
 
-COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/main.c
+COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c $(COMMON)/main.c
 USB_SRC    := $(USBDIR)/corrado_usb_macos.c
 
 ifdef YEAR

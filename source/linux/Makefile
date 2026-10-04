@@ -23,7 +23,7 @@ CFLAGS    ?= -O2 -Wall -Wextra -std=c11
 CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR)
 LDLIBS    += -lusb-1.0
 
-COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/main.c
+COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c $(COMMON)/main.c
 USB_SRC    := $(USBDIR)/corrado_usb_linux.c
 
 ifdef YEAR

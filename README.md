@@ -28,6 +28,7 @@ Corrado/
 │   └── corrado_usb.h            # USB programmer API (OS-independent)
 ├── source/
 │   ├── corrado_eprom.c          # shared image + checksum implementation
+│   ├── corrado_ops.c            # shared backup/copy/delete operations
 │   ├── corrado_profile.h        # per-year ECU profile interface
 │   ├── main.c                   # shared CLI front end
 │   ├── linux/
@@ -109,8 +110,26 @@ corrado-eprom read   stock.bin      # dump the chip (back up first!)
 corrado-eprom write  mytune.bin     # program the chip, then auto-verify
 corrado-eprom verify mytune.bin     # compare chip against a file
 corrado-eprom blankcheck            # confirm the chip is erased (all 0xFF)
+corrado-eprom backup [out.bin]      # read chip -> file (auto-timestamped)
+corrado-eprom copy                  # clone one chip to another (prompts a swap)
+corrado-eprom delete                # electrically erase the chip (reusable parts)
 corrado-eprom checksum mytune.bin --fix   # check/repair trailing checksum
 ```
+
+### Backup, copy and delete
+
+- **backup** — reads the whole chip to a raw binary file. With no filename
+  it writes an auto-timestamped name like
+  `corrado-1992-27C256-20260104-192154.bin`. This is the chip→file
+  direction; always back up a stock chip before writing.
+- **copy** — chip→chip clone. It reads the SOURCE (master) chip into memory,
+  prompts you to swap in the TARGET chip, then programs and verifies it.
+- **delete** — electrically erases the chip and blank-checks it.
+  > A genuine 27C-series part is **UV-erasable / one-time-programmable** and
+  > **cannot** be erased electrically — the tool reports this and you must
+  > remove the chip and use a UV eraser. `delete` succeeds on pin-compatible
+  > reusable replacements (SST27SF512, Winbond W27C512, 28C256 EEPROM, …)
+  > that people fit to these sockets.
 
 The `checksum` command works on a file alone (no hardware needed) and can
 repair the Digifant/Motronic-style trailing checksum word so the 16-bit

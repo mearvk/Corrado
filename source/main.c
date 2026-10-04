@@ -16,6 +16,11 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* Expose localtime_r from <time.h> under -std=c11 on POSIX systems. */
+#if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
+#  define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "corrado_eprom.h"
 #include "corrado_usb.h"
 #include "corrado_profile.h"
@@ -23,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 static const char *ecu_name(corrado_ecu_t e)
 {
@@ -65,9 +71,37 @@ static int usage(const char *argv0)
         "  write  <in.bin> [--no-verify]  program the chip from a file\n"
         "  verify <ref.bin>         compare chip against a file\n"
         "  blankcheck               confirm the chip is erased (all 0xFF)\n"
+        "  backup [out.bin]         read the chip to a (timestamped) file\n"
+        "  copy                     clone one chip to another (prompts a swap)\n"
+        "  delete                   electrically erase the chip (reusable parts)\n"
         "  checksum <file.bin> [--fix]  check/repair trailing checksum\n",
         argv0);
     return 2;
+}
+
+/* Build a default timestamped backup filename for the current profile. */
+static void default_backup_name(char *out, size_t n)
+{
+    const corrado_year_profile_t *p = corrado_year_profile();
+    time_t now = time(NULL);
+    struct tm tmv;
+#if defined(_WIN32)
+    localtime_s(&tmv, &now);
+#else
+    localtime_r(&now, &tmv);
+#endif
+    snprintf(out, n, "corrado-%d-%s-%04d%02d%02d-%02d%02d%02d.bin",
+             p->year, corrado_eprom_name(p->eprom),
+             tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday,
+             tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+}
+
+/* Wait for the operator to swap the physical chip between copy phases. */
+static void prompt_swap(const char *msg)
+{
+    printf("\n>>> %s\n>>> Insert the chip and press Enter to continue...", msg);
+    fflush(stdout);
+    { int c; while ((c = getchar()) != '\n' && c != EOF) { } }
 }
 
 /* checksum sub-command works on a file only; no hardware needed. */
@@ -162,6 +196,31 @@ int main(int argc, char **argv)
         }
     } else if (strcmp(argv[1], "blankcheck") == 0) {
         st = corrado_usb_blank_check(dev, type);
+    } else if (strcmp(argv[1], "backup") == 0) {
+        char auto_name[128];
+        const char *out = argv[2];
+        if (!out) { default_backup_name(auto_name, sizeof auto_name);
+                    out = auto_name; }
+        st = corrado_usb_backup(dev, type, out, progress, (void *)"backup");
+        if (st == CORRADO_OK) printf("  Backup     : %s\n", out);
+    } else if (strcmp(argv[1], "copy") == 0) {
+        corrado_image_t buf;
+        memset(&buf, 0, sizeof buf);
+        prompt_swap("Insert the SOURCE (master) chip to copy FROM.");
+        st = corrado_usb_copy(dev, type, CORRADO_COPY_READ, &buf,
+                              progress, (void *)"reading");
+        if (st == CORRADO_OK) {
+            prompt_swap("Now insert the TARGET (blank) chip to copy TO.");
+            st = corrado_usb_copy(dev, type, CORRADO_COPY_WRITE, &buf,
+                                  progress, (void *)"writing");
+            corrado_image_free(&buf);
+        }
+    } else if (strcmp(argv[1], "delete") == 0) {
+        st = corrado_usb_delete(dev, type);
+        if (st == CORRADO_ERR_UNSUPPORTED)
+            fprintf(stderr,
+                "  Note       : a true UV/OTP 27C part cannot be erased\n"
+                "               electrically - remove it and use a UV eraser.\n");
     } else {
         corrado_usb_close(dev);
         corrado_usb_exit();

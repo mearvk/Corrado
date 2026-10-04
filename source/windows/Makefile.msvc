@@ -23,7 +23,7 @@ CFLAGS  = /nologo /O2 /W4 /I$(INCLUDE) /I$(COMMON) /I$(USBDIR) \
           /I$(LIBUSB_DIR)\include\libusb-1.0
 LIBS    = $(LIBUSB_DIR)\MS64\dll\libusb-1.0.lib
 
-COMMON_SRC = $(COMMON)\corrado_eprom.c $(COMMON)\main.c
+COMMON_SRC = $(COMMON)\corrado_eprom.c $(COMMON)\corrado_ops.c $(COMMON)\main.c
 USB_SRC    = $(USBDIR)\corrado_usb_windows.c
 
 !IFNDEF YEAR

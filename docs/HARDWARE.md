@@ -58,8 +58,21 @@ corrado-eprom read   stock.bin        # back up the original first!
 corrado-eprom write  mytune.bin       # program + auto verify
 corrado-eprom verify mytune.bin       # compare chip to a file
 corrado-eprom blankcheck              # confirm an erased chip
+corrado-eprom backup                  # read chip -> timestamped file
+corrado-eprom copy                    # clone one chip to another
+corrado-eprom delete                  # electrically erase (reusable parts)
 corrado-eprom checksum mytune.bin --fix   # repair trailing checksum
 ```
+
+### Erasing: UV vs. electrical
+
+The `delete` command sends an electrical chip-erase. A real **27C256** is a
+UV-erasable (often OTP) EPROM: it **cannot** be erased this way. For those
+parts you must pull the chip and expose the quartz window to a UV eraser
+(typically 15–30 minutes); the tool reports `unsupported` and tells you so.
+The electrical erase succeeds only on reusable, pin-compatible replacements
+(e.g. SST27SF512, Winbond W27C512, or a 28C256 EEPROM) that are commonly
+fitted to these sockets for repeated tuning.
 
 **Always keep a verified backup of the stock image before writing.**
 

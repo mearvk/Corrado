@@ -113,6 +113,38 @@ public:
         throw UsbError(st);
     }
 
+    /* BACKUP: read the whole chip and save it to a raw binary file. */
+    void backup(corrado_eprom_type_t type, const std::string &path,
+                ProgressFn progress = {}) {
+        corrado_status_t st = corrado_usb_backup(
+            dev_, type, path.c_str(), trampoline,
+            progress ? &progress : nullptr);
+        if (st != CORRADO_OK) throw UsbError(st);
+    }
+
+    /* COPY, phase 1: read the master chip and return its contents. Swap
+     * in the target chip, then call writeCopy() with the same bytes. */
+    std::vector<std::uint8_t> readCopy(corrado_eprom_type_t type,
+                                       ProgressFn progress = {}) {
+        return read(type, std::move(progress));
+    }
+
+    /* COPY, phase 2: program bytes captured by readCopy() into the chip
+     * now in the socket, then verify. */
+    void writeCopy(corrado_eprom_type_t type,
+                   const std::vector<std::uint8_t> &bytes,
+                   ProgressFn progress = {}) {
+        write(type, bytes, std::move(progress));
+    }
+
+    /* DELETE: electrically erase the chip (reusable parts only) and
+     * verify it is blank. Throws UsbError(CORRADO_ERR_UNSUPPORTED) for a
+     * true UV/OTP 27C part - use a UV eraser for those. */
+    void erase(corrado_eprom_type_t type) {
+        corrado_status_t st = corrado_usb_delete(dev_, type);
+        if (st != CORRADO_OK) throw UsbError(st);
+    }
+
 private:
     static void trampoline(std::size_t done, std::size_t total, void *user) {
         if (user) (*static_cast<ProgressFn *>(user))(done, total);

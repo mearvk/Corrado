@@ -84,6 +84,53 @@ corrado_status_t corrado_usb_write(corrado_usb_dev_t *dev,
 corrado_status_t corrado_usb_blank_check(corrado_usb_dev_t *dev,
                                          corrado_eprom_type_t type);
 
+/* Electrically erase the device, then confirm it reads blank (0xFF).
+ *
+ * NOTE: a genuine 27C-series part is a UV-erasable (and often one-time
+ * programmable) EPROM that CANNOT be erased electrically - it must be
+ * removed and placed under a UV eraser. This call therefore returns
+ * CORRADO_ERR_UNSUPPORTED for pure UV/OTP devices. It succeeds for the
+ * pin-compatible, in-circuit-erasable replacements commonly dropped into
+ * these sockets (e.g. SST27SF512, Winbond W27C512, 28C256 EEPROM). */
+corrado_status_t corrado_usb_erase(corrado_usb_dev_t *dev,
+                                   corrado_eprom_type_t type);
+
+/* ---- High-level chip operations (built on read/write/erase) ----------- */
+
+/* BACKUP: read the whole chip and save it to a raw binary file. This is
+ * the chip -> file direction; always back up a stock chip before writing. */
+corrado_status_t corrado_usb_backup(corrado_usb_dev_t *dev,
+                                    corrado_eprom_type_t type,
+                                    const char *path,
+                                    corrado_progress_cb cb, void *user);
+
+/* COPY (chip -> chip) in two phases that share one in-memory buffer:
+ *
+ *   phase CORRADO_COPY_READ  : read the SOURCE/master chip into *buf
+ *                              (allocates *buf; caller frees with
+ *                               corrado_image_free()).
+ *   phase CORRADO_COPY_WRITE : program *buf into the TARGET chip and
+ *                              verify (does not free *buf).
+ *
+ * The caller swaps the physical chip in the programmer between the two
+ * phases. See corrado_usb_copy_oneshot() for the file-backed convenience. */
+typedef enum {
+    CORRADO_COPY_READ = 0,
+    CORRADO_COPY_WRITE
+} corrado_copy_phase_t;
+
+corrado_status_t corrado_usb_copy(corrado_usb_dev_t *dev,
+                                  corrado_eprom_type_t type,
+                                  corrado_copy_phase_t phase,
+                                  corrado_image_t *buf,
+                                  corrado_progress_cb cb, void *user);
+
+/* DELETE: electrically erase the chip (reusable parts only) and verify it
+ * is blank. Thin wrapper over corrado_usb_erase() for symmetry with the
+ * backup/copy verbs. */
+corrado_status_t corrado_usb_delete(corrado_usb_dev_t *dev,
+                                    corrado_eprom_type_t type);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

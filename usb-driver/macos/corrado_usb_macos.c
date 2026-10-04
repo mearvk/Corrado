@@ -116,6 +116,7 @@ corrado_prog_model_t corrado_usb_model(const corrado_usb_dev_t *dev)
 /* ---- TL866 bulk framing (simplified, see Linux backend for notes) ----- */
 #define TL866_CMD_READ_CODE  0x05
 #define TL866_CMD_WRITE_CODE 0x06
+#define TL866_CMD_ERASE      0x19  /* chip erase (reusable/flash parts) */
 #define TL866_BLOCK          0x80
 
 static corrado_status_t bulk_out(corrado_usb_dev_t *d,
@@ -234,4 +235,33 @@ corrado_status_t corrado_usb_blank_check(corrado_usb_dev_t *dev,
     }
     corrado_image_free(&img);
     return st;
+}
+
+corrado_status_t corrado_usb_erase(corrado_usb_dev_t *dev,
+                                   corrado_eprom_type_t type)
+{
+    uint8_t cmd[8];
+    corrado_status_t st;
+
+    if (!dev) return CORRADO_ERR_ARG;
+    if (corrado_eprom_size(type) == 0) return CORRADO_ERR_UNSUPPORTED;
+
+    /*
+     * Issue the TL866 chip-erase command. A genuine UV-erasable / OTP
+     * 27C-series part cannot be erased electrically: the programmer
+     * rejects the command, which surfaces here as a USB/transport error
+     * that we translate to CORRADO_ERR_UNSUPPORTED so the caller can tell
+     * the user to use a UV eraser. Pin-compatible reusable replacements
+     * (SST27SF512, W27C512, 28C256, ...) accept the command.
+     */
+    memset(cmd, 0, sizeof(cmd));
+    cmd[0] = TL866_CMD_ERASE;
+    cmd[1] = (uint8_t)type;
+
+    st = bulk_out(dev, cmd, (int)sizeof(cmd));
+    if (st == CORRADO_ERR_USB) return CORRADO_ERR_UNSUPPORTED;
+    if (st != CORRADO_OK)      return st;
+
+    /* Confirm the erase actually took: the whole device must read 0xFF. */
+    return corrado_usb_blank_check(dev, type);
 }
