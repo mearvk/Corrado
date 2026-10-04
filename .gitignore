@@ -1,0 +1,14 @@
+# Build output
+/build/
+*.o
+*.obj
+*.exe
+*.out
+
+# Chip dumps / tunes (keep them out of version control by default)
+*.bin
+!docs/**/*.bin
+
+# Editor / OS cruft
+.DS_Store
+*.swp

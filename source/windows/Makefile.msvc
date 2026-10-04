@@ -1,0 +1,40 @@
+# Makefile.msvc -- Corrado EPROM tool, Windows / MSVC (nmake) build.
+#
+# Open a "x64 Native Tools Command Prompt for VS" and run:
+#   nmake /f Makefile.msvc              build all years
+#   nmake /f Makefile.msvc YEAR=1996    build a single year
+#   nmake /f Makefile.msvc clean
+#
+# Requires libusb-1.0 for MSVC: set LIBUSB_DIR to its root (containing
+# include\libusb-1.0 and the import library libusb-1.0.lib).
+#
+# SPDX-License-Identifier: MIT
+
+ROOT    = ..\..
+INCLUDE = $(ROOT)\include
+COMMON  = $(ROOT)\source
+USBDIR  = $(ROOT)\usb-driver\windows
+BUILD   = $(ROOT)\build\windows
+
+LIBUSB_DIR = C:\libusb
+
+CC      = cl
+CFLAGS  = /nologo /O2 /W4 /I$(INCLUDE) /I$(COMMON) /I$(USBDIR) \
+          /I$(LIBUSB_DIR)\include\libusb-1.0
+LIBS    = $(LIBUSB_DIR)\MS64\dll\libusb-1.0.lib
+
+COMMON_SRC = $(COMMON)\corrado_eprom.c $(COMMON)\main.c
+USB_SRC    = $(USBDIR)\corrado_usb_windows.c
+
+!IFNDEF YEAR
+YEAR = 1990 1991 1992 1993 1994 1995 1996
+!ENDIF
+
+all:
+	@for %y in ($(YEAR)) do @( \
+	    if not exist $(BUILD)\%y mkdir $(BUILD)\%y & \
+	    $(CC) $(CFLAGS) /Fe$(BUILD)\%y\corrado-eprom.exe \
+	        $(COMMON_SRC) $(USB_SRC) $(COMMON)\%y\profile.c $(LIBS) )
+
+clean:
+	@if exist $(BUILD) rmdir /s /q $(BUILD)
