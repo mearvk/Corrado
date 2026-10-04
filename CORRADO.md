@@ -137,9 +137,16 @@ corrado-eprom checksum tune.bin --fix
 corrado-eprom write tune.bin        # 2. burn + auto-verify
 ```
 
+**Image maps & reference binaries:** the actual byte layout of the G60
+(Digifant) and VR6 (Motronic) images — data regions, part-number strings,
+map offsets and the checksum tail — is documented in
+[`eproms/EPROM_MAPS.md`](eproms/EPROM_MAPS.md), which also ships
+MIT-licensed reference `.bin` images and a `fetch-eproms.sh` helper for real
+community G60 dumps.
+
 *Sources: alldatasheet/Microchip 27C256 datasheet, chiptuning ECU lists,
-TunerPro Digifant community. Content was rephrased for compliance with
-licensing restrictions.*
+TunerPro Digifant community, structural analysis of a community G60 dump.
+Content was rephrased for compliance with licensing restrictions.*
 
 ---
 

@@ -16,6 +16,11 @@ and USB drivers (in both **C** and **C++**) for all three.
 car, its engines, the ECU/EPROM, and an **HP-evaluation chart** for EPROM
 tuning (raising boost and fuel pressure for more power/torque).
 
+**EPROM maps:** [`eproms/EPROM_MAPS.md`](eproms/EPROM_MAPS.md) documents the
+G60 (Digifant) and VR6 (Motronic) image layouts with hex excerpts, ships
+MIT-licensed reference `.bin` images the tool can read/write/checksum, and
+includes `fetch-eproms.sh` to pull real community G60 dumps.
+
 ## The target chip
 
 The Corrado ECU calibration lives in a socketed 28-pin **27C256** EPROM

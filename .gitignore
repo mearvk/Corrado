@@ -8,6 +8,13 @@
 # Chip dumps / tunes (keep them out of version control by default)
 *.bin
 !docs/**/*.bin
+# ...but DO track our own MIT-licensed reference images.
+!eproms/*_REFERENCE.bin
+# NEVER track real community dumps fetched by fetch-eproms.sh (unlicensed).
+/eproms/real/
+
+# Scratch analysis dir
+/.analysis/
 
 # Editor / OS cruft
 .DS_Store
