@@ -23,6 +23,7 @@
 
 # Java build output
 /java/out/
+/sleela/java/out/
 *.class
 
 # Fetched third-party CC images (downloaded by images/fetch-images.sh) use
