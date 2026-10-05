@@ -21,6 +21,10 @@
 # The source archive include/libusb-1.0.30.zip IS tracked; its build is not.
 /vendor/libusb/staged/
 
+# Java build output
+/java/out/
+*.class
+
 # Fetched third-party CC images (downloaded by images/fetch-images.sh) use
 # the manifest's NN_* naming; ignore only those, NOT owner-uploaded photos.
 /images/g60/[0-9][0-9]_*.jpg
