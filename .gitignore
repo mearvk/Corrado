@@ -26,6 +26,11 @@
 /sleela/java/out/
 *.class
 
+# FFM shim shared libraries (build output of ffm-shim/)
+/ffm-shim/*.so
+/ffm-shim/*.dylib
+/ffm-shim/*.dll
+
 # Fetched third-party CC images (downloaded by images/fetch-images.sh) use
 # the manifest's NN_* naming; ignore only those, NOT owner-uploaded photos.
 /images/g60/[0-9][0-9]_*.jpg
