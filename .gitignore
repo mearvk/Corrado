@@ -17,6 +17,10 @@
 # Scratch analysis dir
 /.analysis/
 
+# Vendored libusb build output (unzipped sources + static lib + staged header).
+# The source archive include/libusb-1.0.30.zip IS tracked; its build is not.
+/vendor/libusb/staged/
+
 # Fetched third-party CC images (downloaded by images/fetch-images.sh) use
 # the manifest's NN_* naming; ignore only those, NOT owner-uploaded photos.
 /images/g60/[0-9][0-9]_*.jpg

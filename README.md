@@ -84,7 +84,9 @@ knows what chip it is talking to.
 
 ## Dependencies
 
-All three drivers use **libusb-1.0** as the USB transport.
+All three drivers use **libusb-1.0** as the USB transport. Install it with your
+OS package manager (below), **or** on Linux build the bundled copy with no
+system libusb needed — see [Vendored libusb](#vendored-libusb-no-system-install).
 
 | OS       | Install libusb                                   | Compiler            |
 |----------|--------------------------------------------------|---------------------|
@@ -118,6 +120,22 @@ nmake /f source\windows\Makefile.msvc LIBUSB_DIR=C:\libusb
 ```
 
 Binaries land in `build/<os>/<year>/corrado-eprom[.exe]`.
+
+### Vendored libusb (no system install)
+
+On Linux you can build against the libusb source bundled in
+`include/libusb-1.0.30.zip` instead of installing a system package — handy for
+offline or pinned builds:
+
+```sh
+make -C source/linux LIBUSB_VENDOR=1            # all years, bundled libusb
+make -C source/linux YEAR=1992 LIBUSB_VENDOR=1  # one year
+```
+
+This compiles libusb's Linux usbfs/netlink backend statically (POSIX threads,
+no libudev) and links it in. libusb is third-party **LGPL-2.1** software; see
+[`vendor/README.md`](vendor/README.md) for licensing and details. macOS/Windows
+should install libusb the normal way (above).
 
 ### Linux device permissions
 
