@@ -39,8 +39,11 @@ endif
 .PHONY: all clean
 all: $(LIB)
 
+# The vendored libusb must be built with -fPIC so its static archive can be
+# linked into THIS shared object. (A plain `make -C vendor/libusb` produces a
+# non-PIC archive, which the linker rejects for a .so.)
 $(VENDOR_LIB):
-	$(MAKE) -C $(VENDOR)
+	$(MAKE) -C $(VENDOR) CFLAGS="-O2 -std=gnu11 -fPIC -fvisibility=hidden"
 
 $(LIB): $(SRC) $(LIBUSB_DEP)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -shared -o $@ $(SRC) $(LDLIBS)
