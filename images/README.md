@@ -19,8 +19,26 @@ The repo owner uploaded these JPEGs directly to the repository:
 | `corrado-009.jpeg` | owner-uploaded |
 
 > These were added by the repository owner. If any are not the owner's own
-> photos, confirm each image's source/licence before redistributing. To sort
-> them into the G60/VR6 folders or add captions, just say which is which.
+> photos, confirm each image's source/licence before redistributing.
+
+### Sorted by model (badge-identified)
+
+Images whose grille/front badge is legible were copied into model folders.
+Side/rear shots with no readable badge were left at the `images/` root.
+
+| Model | Folder copy | From | Identified by |
+|-------|-------------|------|---------------|
+| **G60** | `g60/corrado-g60-001.jpeg` | `corrado-001.jpeg` | "G60" grille badge (blue car) |
+| **G60** | `g60/corrado-g60-002.jpeg` | `corrado-002.jpeg` | "G60" grille badge (black car) |
+| **G60** | `g60/corrado-g60-003.jpeg` | `corrado-003.jpeg` | "G60" grille badge (= 002) |
+| **VR6** | `vr6/corrado-vr6-005.jpeg` | `corrado-005.jpeg` | "VR6" grille badge (blue car) |
+| **VR6** | `vr6/corrado-vr6-007.jpeg` | `corrado-007.jpeg` | "VR6" grille badge (silver car) |
+| **VR6** | `vr6/corrado-vr6-009.jpeg` | `corrado-009.jpeg` | "VR6" grille badge (red car) |
+| _unsorted_ | — (left at root) | `corrado-004.jpeg` | side profile, no readable badge |
+| _unsorted_ | — (left at root) | `corrado-006.jpeg` | rear 3/4, no readable badge |
+| _unsorted_ | — (left at root) | `corrado-008.jpeg` | side profile, no readable badge |
+
+The originals remain at the `images/` root; the model folders hold **copies**.
 
 ## Optional: additional CC-licensed images from Wikimedia Commons
 
