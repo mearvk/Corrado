@@ -16,6 +16,10 @@ and USB drivers (in both **C** and **C++**) for all three.
 car, its engines, the ECU/EPROM, and an **HP-evaluation chart** for EPROM
 tuning (raising boost and fuel pressure for more power/torque).
 
+**Tuning to 260+ WHP:** [`TUNERZ.md`](TUNERZ.md) is a build guide — upgrade
+parts sorted by HP/torque gain with manufacturer, era and cost, plus factory
+MPG by year and average US fuel prices.
+
 **EPROM maps:** [`eproms/EPROM_MAPS.md`](eproms/EPROM_MAPS.md) documents the
 G60 (Digifant) and VR6 (Motronic) image layouts with hex excerpts, ships
 MIT-licensed reference `.bin` images the tool can read/write/checksum, and
