@@ -1,0 +1,12 @@
+# Corrado image manifest  (TSV: local_path <TAB> source_url <TAB> license <TAB> commons_page)
+# 8 CC-licensed photos from Wikimedia Commons: 4 G60, 4 VR6.
+# Fetched by ./fetch-images.sh (binary images are NOT committed to the repo).
+#
+g60/01_corrado_g60_red_1991.jpg	https://upload.wikimedia.org/wikipedia/commons/5/5b/VW_Corrado_G60_red_vl_1991_TCE.jpg	CC BY-SA 3.0	https://commons.wikimedia.org/wiki/File:VW_Corrado_G60_red_vl_1991_TCE.jpg
+g60/02_corrado_g60.jpg	https://upload.wikimedia.org/wikipedia/commons/b/b4/VW_Corrado_G60.jpg	CC BY-SA 2.0	https://commons.wikimedia.org/wiki/File:VW_Corrado_G60.jpg
+g60/03_corrado_g60.jpg	https://upload.wikimedia.org/wikipedia/commons/0/05/Volkswagen_Corrado_G60_%286965199043%29.jpg	CC BY 2.0	https://commons.wikimedia.org/wiki/File:Volkswagen_Corrado_G60_(6965199043).jpg
+g60/04_corrado_g60_supercharger.jpg	https://upload.wikimedia.org/wikipedia/commons/3/33/Corrado_G60_Supercharger.jpg	CC BY-SA 2.0	https://commons.wikimedia.org/wiki/File:Corrado_G60_Supercharger.jpg
+vr6/01_corrado_vr6_1994_2.9.jpg	https://upload.wikimedia.org/wikipedia/commons/8/88/1994_Volkswagen_Corrado_VR6_2.9.jpg	CC BY-SA 4.0	https://commons.wikimedia.org/wiki/File:1994_Volkswagen_Corrado_VR6_2.9.jpg
+vr6/02_corrado_vr6_interior.jpg	https://upload.wikimedia.org/wikipedia/commons/0/0b/Corrado_VR6_interior.jpg	CC (see Commons page)	https://commons.wikimedia.org/wiki/File:Corrado_VR6_interior.jpg
+vr6/03_corrado_vr6.jpg	https://upload.wikimedia.org/wikipedia/commons/c/cb/VW_Corrado_%2840965504912%29.jpg	CC0 1.0 (public domain)	https://commons.wikimedia.org/wiki/File:VW_Corrado_(40965504912).jpg
+vr6/04_corrado_vr6.jpg	https://upload.wikimedia.org/wikipedia/commons/e/e7/VW_Corrado_%282347670773%29.jpg	CC BY-SA 2.0	https://commons.wikimedia.org/wiki/File:VW_Corrado_(2347670773).jpg

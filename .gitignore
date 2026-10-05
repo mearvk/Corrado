@@ -17,6 +17,15 @@
 # Scratch analysis dir
 /.analysis/
 
+# Fetched third-party CC images (downloaded by images/fetch-images.sh).
+# We keep the manifest/README/script in git, but NOT the binary images.
+/images/g60/*.jpg
+/images/vr6/*.jpg
+/images/g60/*.jpeg
+/images/vr6/*.jpeg
+/images/g60/*.png
+/images/vr6/*.png
+
 # Editor / OS cruft
 .DS_Store
 *.swp

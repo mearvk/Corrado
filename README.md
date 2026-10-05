@@ -30,6 +30,11 @@ European-vs-American differences, with region-specific docs sorted under
 each area's `regional/europe/` and `regional/america/` folders (currently
 EPROM/ECU and audio).
 
+**Photos:** [`images/`](images/) curates 8 CC-licensed Corrado photos (4
+G60, 4 VR6) from Wikimedia Commons — run `images/fetch-images.sh` to
+download them (the binaries aren't committed; full attribution in
+[`images/README.md`](images/README.md)).
+
 ## The target chip
 
 The Corrado ECU calibration lives in a socketed 28-pin **27C256** EPROM
