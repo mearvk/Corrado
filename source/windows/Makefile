@@ -13,6 +13,7 @@
 ROOT      := ../..
 INCLUDE   := $(ROOT)/include
 COMMON    := $(ROOT)/source
+PROFILES  := $(COMMON)/windows
 USBDIR    := $(ROOT)/usb-driver/windows
 BUILD     := $(ROOT)/build/windows
 
@@ -34,10 +35,10 @@ endif
 .PHONY: all clean
 all: $(foreach y,$(YEARS),$(BUILD)/$(y)/$(TARGET))
 
-$(BUILD)/%/$(TARGET): $(COMMON_SRC) $(USB_SRC) $(COMMON)/%/profile.c
+$(BUILD)/%/$(TARGET): $(COMMON_SRC) $(USB_SRC) $(PROFILES)/%/profile.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ \
-	    $(COMMON_SRC) $(USB_SRC) $(COMMON)/$*/profile.c $(LDLIBS)
+	    $(COMMON_SRC) $(USB_SRC) $(PROFILES)/$*/profile.c $(LDLIBS)
 	@echo built $@
 
 clean:

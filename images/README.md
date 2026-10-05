@@ -21,6 +21,17 @@ The repo owner uploaded these JPEGs directly to the repository:
 > These were added by the repository owner. If any are not the owner's own
 > photos, confirm each image's source/licence before redistributing.
 
+### Sketches (committed)
+
+| File | Notes |
+|------|-------|
+| `corrado-sketch-016.jpeg` | owner-uploaded sketch |
+| `corrado-sketch-017.jpeg` | owner-uploaded sketch |
+
+> Earlier sketch slots `corrado-sketch-001.jpeg` … `015.jpeg` were empty
+> 2-byte placeholders (never populated) and have been removed; only the two
+> valid sketches above remain.
+
 ### Sorted by model (badge-identified)
 
 Images whose grille/front badge is legible were copied into model folders.

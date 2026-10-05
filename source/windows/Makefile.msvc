@@ -10,11 +10,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-ROOT    = ..\..
-INCLUDE = $(ROOT)\include
-COMMON  = $(ROOT)\source
-USBDIR  = $(ROOT)\usb-driver\windows
-BUILD   = $(ROOT)\build\windows
+ROOT     = ..\..
+INCLUDE  = $(ROOT)\include
+COMMON   = $(ROOT)\source
+PROFILES = $(COMMON)\windows
+USBDIR   = $(ROOT)\usb-driver\windows
+BUILD    = $(ROOT)\build\windows
 
 LIBUSB_DIR = C:\libusb
 
@@ -34,7 +35,7 @@ all:
 	@for %y in ($(YEAR)) do @( \
 	    if not exist $(BUILD)\%y mkdir $(BUILD)\%y & \
 	    $(CC) $(CFLAGS) /Fe$(BUILD)\%y\corrado-eprom.exe \
-	        $(COMMON_SRC) $(USB_SRC) $(COMMON)\%y\profile.c $(LIBS) )
+	        $(COMMON_SRC) $(USB_SRC) $(PROFILES)\%y\profile.c $(LIBS) )
 
 clean:
 	@if exist $(BUILD) rmdir /s /q $(BUILD)

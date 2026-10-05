@@ -174,11 +174,18 @@ sum of the image is zero.
 ## Status / caveats
 
 This is a complete, compiling scaffold with a verified image/checksum
-library and CLI. The TL866 bulk-protocol framing in the drivers is a
-readable reference of the read/write/verify path; before flashing a
-specific TL866 firmware revision for real, cross-check the framing against
-the upstream open-source `minipro` project for your exact unit, and
-confirm the per-year VW part numbers against your own ECU.
+library and CLI. The per-OS Makefiles build one binary per model year into
+`build/<os>/<year>/`; the OS-independent core (image + checksum library and
+CLI) compiles warning-clean on its own, and the checksum library round-trips
+against the reference images in `eproms/`. The USB drivers require
+**libusb-1.0** to be installed (see Dependencies) — without it only the
+hardware-free core compiles.
+
+The TL866 bulk-protocol framing in the drivers is a readable reference of the
+read/write/verify path; before flashing a specific TL866 firmware revision for
+real, cross-check the framing against the upstream open-source `minipro`
+project for your exact unit, and confirm the per-year VW part numbers against
+your own ECU.
 
 ## License
 
