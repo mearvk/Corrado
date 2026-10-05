@@ -42,19 +42,29 @@ ordinals are 0=27C128, 1=27C256, 2=27C512.
 
 ## Build
 
+The Makefile auto-detects the host OS and builds the right output against the
+matching USB backend. Override with `OS=linux|macos|windows`.
+
 ```sh
 cd ffm-shim
-make                    # link against system libusb-1.0
-make LIBUSB_VENDOR=1    # or the bundled libusb (needs it built with -fPIC)
+make                    # system libusb-1.0 (all OSes)
+make LIBUSB_VENDOR=1    # bundled libusb (Linux only); errors on macOS/Windows
 ```
 
-Produces `libcorrado_ffm.so` (Linux). The macOS/Windows equivalents
-(`libcorrado_ffm.dylib` / `corrado_ffm.dll`) build the same way with the
-respective OS USB backend.
+| Host OS   | Output                 | USB backend                | libusb source |
+|-----------|------------------------|----------------------------|---------------|
+| Linux     | `libcorrado_ffm.so`    | `usb-driver/linux`         | system **or** bundled (`LIBUSB_VENDOR=1`) |
+| macOS     | `libcorrado_ffm.dylib` | `usb-driver/macos`         | `brew install libusb` (pkg-config / Homebrew prefix) |
+| Windows   | `corrado_ffm.dll`      | `usb-driver/windows`       | libusb-1.0 over WinUSB (bind the TL866 via Zadig) |
 
-> Vendored-libusb note: to link the static vendored libusb into a shared
-> object, build it with PIC:
-> `make -C ../vendor/libusb CFLAGS="-O2 -std=gnu11 -fPIC -fvisibility=hidden"`.
+- **macOS** links `-dynamiclib`; libusb is resolved via `pkg-config`, falling
+  back to the Homebrew prefixes (`/opt/homebrew`, `/usr/local`).
+- **Windows (MinGW)** builds the `.dll` with `-shared` against `libusb-1.0`. For
+  an MSVC build, compile the shim + `corrado_eprom.c` + `corrado_usb_windows.c`
+  with `cl /LD` against `libusb-1.0.lib`.
+- The **bundled libusb** path is Linux-only (it compiles the Linux usbfs/netlink
+  backend); macOS/Windows use a system libusb. On Linux the Makefile forces a
+  clean `-fPIC` rebuild of the bundled lib before linking the shared object.
 
 ## Use from Java
 

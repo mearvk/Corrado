@@ -6,11 +6,15 @@
 # Corrado repository from GitHub, build every layer, and report any errors so a
 # host can decide whether it can run the Corrado program.
 #
+# Cross-platform: detects the host OS (Linux / macOS / Windows) and builds the
+# matching per-OS C tree and native shim. Linux, Windows 10+ and macOS are all
+# supported (the C layer and USB drivers already ship per-OS backends).
+#
 # What it builds (each independently; a failure in one does not abort the rest):
-#   1. C CLI            (make -C source/linux [LIBUSB_VENDOR=1])  -> corrado-eprom
+#   1. C CLI            (make -C source/<os> [LIBUSB_VENDOR=1])  -> corrado-eprom
 #   2. Java core port   (javac java/src/com/corrado/eprom/*.java)
-#   3. sleela series    (javac sleela/java/.../**.java)           connector+control+FFM
-#   4. FFM shim .so     (make -C ffm-shim [LIBUSB_VENDOR=1])      direct in-JVM USB path
+#   3. sleela series    (javac sleela/java/.../**.java)          connector+control+FFM
+#   4. FFM shim         (make -C ffm-shim [LIBUSB_VENDOR=1])     .so/.dylib/.dll
 #
 # It prefers a system libusb; if absent it falls back to the repo's bundled
 # libusb (LIBUSB_VENDOR=1) so the native pieces still build offline.
@@ -90,6 +94,20 @@ if [ $MISSING_CORE -ne 0 ]; then
   exit $STEP_FAILS
 fi
 
+# ---- 0b. host OS detection -------------------------------------------------
+# Determines which per-OS source tree (source/<HOST_OS>) and build output
+# directory (build/<HOST_OS>) the C CLI uses, and the shim's output filename.
+case "$(uname -s 2>/dev/null)" in
+  Linux)                       HOST_OS=linux;   SHIM_GLOB='libcorrado_ffm.so' ;;
+  Darwin)                      HOST_OS=macos;   SHIM_GLOB='libcorrado_ffm.dylib' ;;
+  CYGWIN*|MINGW*|MSYS*|Windows_NT) HOST_OS=windows; SHIM_GLOB='corrado_ffm.dll' ;;
+  *)                           HOST_OS=linux;   SHIM_GLOB='libcorrado_ffm.so' ;;
+esac
+# On Windows a produced binary is corrado-eprom.exe; elsewhere corrado-eprom.
+CLI_NAME=corrado-eprom
+[ "$HOST_OS" = windows ] && CLI_NAME=corrado-eprom.exe
+info "host OS: $HOST_OS"
+
 # ---- 1. download (clone) ---------------------------------------------------
 if [ $DO_CLONE -eq 1 ]; then
   log "download: $REPO_URL ($REF) -> $DEST"
@@ -122,22 +140,23 @@ elif have pkg-config && pkg-config --exists libusb-1.0 2>/dev/null; then
   info "system libusb-1.0 present ($(pkg-config --modversion libusb-1.0))"
 elif [ -f /usr/include/libusb-1.0/libusb.h ]; then
   info "system libusb-1.0 header present"
-elif [ -f include/libusb-1.0.30.zip ]; then
+elif [ -f include/libusb-1.0.30.zip ] && [ "$HOST_OS" = linux ]; then
   VENDOR_FLAG="LIBUSB_VENDOR=1"; info "no system libusb; using bundled libusb-1.0.30.zip"
 else
-  info "no system libusb and no bundled archive; native USB builds may fail"
+  info "no system libusb detected; install it (apt/dnf, brew, or Zadig+libusb"
+  info "on Windows). Bundled libusb is Linux-only. Native USB builds may fail."
 fi
 
 # ---- 3. build the C CLI ----------------------------------------------------
-log "build: C EPROM CLI"
-if [ -d source/linux ]; then
+log "build: C EPROM CLI (OS=$HOST_OS)"
+if [ -d "source/$HOST_OS" ]; then
   # shellcheck disable=SC2086
-  run_step "C CLI (all model years)" make -C source/linux $VENDOR_FLAG
-  if ls build/linux/*/corrado-eprom >/dev/null 2>&1; then
-    info "binaries: $(ls build/linux/*/corrado-eprom | wc -l) year(s)"
+  run_step "C CLI (all model years)" make -C "source/$HOST_OS" $VENDOR_FLAG
+  if ls build/$HOST_OS/*/$CLI_NAME >/dev/null 2>&1; then
+    info "binaries: $(ls build/$HOST_OS/*/$CLI_NAME | wc -l) year(s)"
   fi
 else
-  info "source/linux not present on this platform checkout; skipping C CLI"
+  info "source/$HOST_OS not present in this checkout; skipping C CLI"
 fi
 
 # ---- 4. build the Java core port ------------------------------------------
@@ -159,17 +178,17 @@ fi
 
 # ---- 6. build the FFM shim shared library ---------------------------------
 if [ -d ffm-shim ]; then
-  log "build: FFM shim (direct in-JVM USB path)"
+  log "build: FFM shim (direct in-JVM USB path, OS=$HOST_OS)"
   # shellcheck disable=SC2086
   run_step "FFM shim shared library" make -C ffm-shim $VENDOR_FLAG
-  if ls ffm-shim/libcorrado_ffm.* >/dev/null 2>&1; then
-    info "shim: $(ls ffm-shim/libcorrado_ffm.* 2>/dev/null)"
+  if ls ffm-shim/$SHIM_GLOB >/dev/null 2>&1; then
+    info "shim: $(ls ffm-shim/$SHIM_GLOB 2>/dev/null)"
   fi
 fi
 
 # ---- 7. smoke check: can we run the program? -------------------------------
 log "smoke check"
-CLI="$(ls build/linux/*/corrado-eprom 2>/dev/null | head -1)"
+CLI="$(ls build/$HOST_OS/*/$CLI_NAME 2>/dev/null | head -1)"
 if [ -n "$CLI" ] && [ -x "$CLI" ]; then
   if "$CLI" info >/dev/null 2>&1; then
     ok "CLI runs: $CLI info"
