@@ -1,9 +1,34 @@
 # Corrado Images (G60 & VR6)
 
-Eight photographs of the Volkswagen Corrado — **4 G60** and **4 VR6** —
-curated from **Wikimedia Commons** under Creative Commons licences.
+Photographs of the Volkswagen Corrado.
 
-## How to get the images
+## Uploaded images (committed)
+
+The repo owner uploaded these JPEGs directly to the repository:
+
+| File | Notes |
+|------|-------|
+| `corrado-001.jpeg` | owner-uploaded |
+| `corrado-002.jpeg` | owner-uploaded |
+| `corrado-003.jpeg` | owner-uploaded (identical to 002) |
+| `corrado-004.jpeg` | owner-uploaded |
+| `corrado-005.jpeg` | owner-uploaded |
+| `corrado-006.jpeg` | owner-uploaded |
+| `corrado-007.jpeg` | owner-uploaded |
+| `corrado-008.jpeg` | owner-uploaded |
+| `corrado-009.jpeg` | owner-uploaded |
+
+> These were added by the repository owner. If any are not the owner's own
+> photos, confirm each image's source/licence before redistributing. To sort
+> them into the G60/VR6 folders or add captions, just say which is which.
+
+## Optional: additional CC-licensed images from Wikimedia Commons
+
+Separately, a curated set of **8 Creative-Commons** Corrado photos (4 G60,
+4 VR6) can be fetched from Wikimedia Commons — these are **not** stored in
+the repo (third-party CC works). Fetch them with:
+
+## How to get the (Wikimedia) images
 
 The image files are **not stored in this repository** (they are third-party
 CC-licensed works). Fetch them to your machine with:
