@@ -76,16 +76,36 @@ Backends:
   JNI/JNA to the Corrado C `usb-driver/<os>/` backend speaking the TL866 bulk
   protocol.
 
-## Transport
+## Transports (interchangeable implementations)
 
-`DirectEpromConnector` bridges `EpromControl` to `EpromConnector` in-process —
-the EPROM analogue of SLeeLa's `SleelaProcessConnector`. It maps each textual
-operation onto chip verbs and folds faults into `EpromResult.failure(...)`,
-per the SLeeLa connector error model.
+Every transport implements the one `EpromConnector` contract, so a host can
+choose or swap transports without changing call sites — exactly the SLeeLa
+property. Three ship here:
+
+- **Direct (in-process)** — `DirectEpromConnector` bridges `EpromControl` to
+  `EpromConnector` in-process, mapping each verb onto chip operations. Analogue
+  of nothing in SLeeLa by itself — it is the "control layer in the same JVM"
+  path, suitable with a real libusb-backed `EpromControl`.
+- **Process (native CLI)** — `ProcessEpromConnector` launches the native
+  Corrado `corrado-eprom` executable as a child process, turning
+  `(operation, arguments)` into argv `[exe, operation, arguments]`, stdout into
+  the result value and a non-zero exit into a failure. The EPROM analogue of
+  SLeeLa's `SleelaProcessConnector`, with the same real-liveness `health()`
+  (executable present + runnable, working directory present).
+- **HTTP (gateway + client)** — `EpromHttpGateway` exposes a delegate connector
+  over `GET /eprom/health` and `POST /eprom/invoke?operation=<name>` (body =
+  arguments), and `EpromHttpConnector` is the JDK `HttpClient` that talks to it.
+  Modelled on SLeeLa's `SleelaHttpGateway` / `SleelaHttpConnector`, including the
+  1 MiB body/response caps and optional CORS origin. An operation-level fault
+  comes back as HTTP 422 carrying the error text.
 
 ```text
-Java host → EpromConnector → DirectEpromConnector → EpromControl → TL866 → EPROM
+Java host → EpromConnector → { Direct | Process | HTTP } → EpromControl / CLI → TL866 → EPROM
 ```
+
+All three were verified against `eproms/G60_StockEprom_REFERENCE.bin`: Direct and
+HTTP run the full verb flow over the fake backend, and Process drove the real
+compiled `corrado-eprom` CLI (`info` returned the live 1992 profile).
 
 ## Error model
 
@@ -116,6 +136,9 @@ applies: **back up the stock image first and verify every write.**
 
 ## Future extension
 
-Only new transport adapters (RMI, HTTP gateway) and a real libusb-backed
-`EpromControl` need to be added; the `EpromConnector` contract and call sites
-stay unchanged — the same extension property SLeeLa's connector series has.
+The remaining pieces are a real **libusb-backed `EpromControl`** (via a usb4java
+binding or JNI/JNA to the Corrado C `usb-driver/<os>/` backend) and, if wanted,
+an **RMI** transport — both drop in behind the unchanged `EpromConnector`
+contract, the same extension property SLeeLa's connector series has. The
+Process transport already reaches the real hardware path today by driving the
+native `corrado-eprom` CLI.

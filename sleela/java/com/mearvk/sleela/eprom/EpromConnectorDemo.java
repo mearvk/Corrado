@@ -50,6 +50,27 @@ public final class EpromConnectorDemo {
             print("blankcheck(after erase)",  c.invoke(EpromInvocation.of("blankcheck")));
             print("unknown-op", c.invoke("frobnicate", ""));
         }
+
+        // --- HTTP transport: same contract, over the loopback gateway --------
+        System.out.println();
+        System.out.println("=== HTTP transport (gateway + client, same contract) ===");
+        EpromControl chip2 =
+            new FakeEpromControl(EpromControl.DeviceType._27C256, stock, true);
+        try (EpromConnector backing =
+                 new DirectEpromConnector(chip2, EpromControl.DeviceType._27C256);
+             com.mearvk.sleela.eprom.transport.EpromHttpGateway gw =
+                 new com.mearvk.sleela.eprom.transport.EpromHttpGateway("127.0.0.1", 0, backing)) {
+            gw.start();
+            try (EpromConnector http =
+                     new com.mearvk.sleela.eprom.transport.EpromHttpConnector(gw.baseUri())) {
+                System.out.println("http.health : " + http.health());
+                print("http model",  http.invoke(EpromInvocation.of("model")));
+                Path httpBackup = work.resolve("sleela-http-backup.bin");
+                print("http backup", http.invoke("backup", httpBackup.toString()));
+                print("http verify", http.invoke("verify", httpBackup.toString()));
+                print("http unknown", http.invoke("frobnicate", ""));
+            }
+        }
     }
 
     private static void print(String label, EpromResult r) {
