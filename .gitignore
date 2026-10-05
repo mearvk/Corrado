@@ -43,3 +43,6 @@
 # Editor / OS cruft
 .DS_Store
 *.swp
+
+# Bootstrap clone/runtime output (sleela/bootstrap-corrado.sh default --dir)
+/corrado-runtime/

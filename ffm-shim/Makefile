@@ -36,16 +36,24 @@ LDLIBS     := -lusb-1.0
 LIBUSB_DEP :=
 endif
 
-.PHONY: all clean
+.PHONY: all clean vendor-pic
 all: $(LIB)
 
 # The vendored libusb must be built with -fPIC so its static archive can be
-# linked into THIS shared object. (A plain `make -C vendor/libusb` produces a
-# non-PIC archive, which the linker rejects for a .so.)
-$(VENDOR_LIB):
+# linked into THIS shared object. A plain `make -C vendor/libusb` (e.g. run by
+# the C CLI build) produces a NON-PIC archive the linker rejects for a .so, and
+# because the archive then exists, a file-target rule would treat it as
+# up-to-date and skip the rebuild. So when LIBUSB_VENDOR=1 we force a clean PIC
+# rebuild of the vendored lib before linking, as an order-only prerequisite.
+ifeq ($(LIBUSB_VENDOR),1)
+$(LIB): | vendor-pic
+endif
+
+vendor-pic:
+	$(MAKE) -C $(VENDOR) clean
 	$(MAKE) -C $(VENDOR) CFLAGS="-O2 -std=gnu11 -fPIC -fvisibility=hidden"
 
-$(LIB): $(SRC) $(LIBUSB_DEP)
+$(LIB): $(SRC)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -shared -o $@ $(SRC) $(LDLIBS)
 	@echo "built $@"
 
