@@ -56,6 +56,13 @@ extern "C" {
 #define CH341A_EP_OUT 0x02u
 #define CH341A_EP_IN  0x82u
 
+/* WinChipHead CH347 high-speed (USB 2.0) USB-to-SPI bridge: a faster,
+ * bench-grade programmer. Interface 2, bulk endpoints 0x06/0x86. */
+#define CH347_VID     0x1A86u
+#define CH347_PID     0x55DBu
+#define CH347_EP_OUT  0x06u
+#define CH347_EP_IN   0x86u
+
 /* Bulk endpoints used by the minipro-family protocol. */
 #define TL866_EP_OUT  0x01u
 #define TL866_EP_IN   0x81u
@@ -74,6 +81,7 @@ typedef enum {
     CORRADO_PROG_T56,
     CORRADO_PROG_T76,
     CORRADO_PROG_CH341A,
+    CORRADO_PROG_CH347,
     CORRADO_PROG_UNKNOWN
 } corrado_prog_model_t;
 

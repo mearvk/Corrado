@@ -55,16 +55,25 @@ udev rules; the CH341A id is the standard WinChipHead SPI bridge):
 | XGecu T56        | `minipro`    | `0xA466` | `0x0053` |
 | XGecu T76        | `minipro`    | `0xA466` | *(tbc)*  |
 | CH341A (SPI)     | `ch341a-spi` | `0x1A86` | `0x5512` |
+| CH347 (HS-SPI)   | `ch347-hs-spi`| `0x1A86`| `0x55DB` |
 
 The XGecu **T76** is recognised by name but its USB product id is not yet
 confirmed from a citable source, so its registry entry is marked `probe=0`
 and it is not auto-detected until the real PID is filled in.
 
-Two **protocol families** are implemented and the backend dispatches on the
-family field: `minipro` (8-byte LE command header over bulk endpoints) and
+Three **protocol families** are implemented and the backend dispatches on the
+family field: `minipro` (8-byte LE command header over bulk endpoints),
 `ch341a-spi` (the CH341 `0xA8` SPI-stream command carrying JEDEC SPI-flash
 opcodes — `0x03` read, `0x02` page-program, `0xC7` chip-erase — in
-`source/corrado_ch341.c`).
+`source/corrado_ch341.c`), and `ch347-hs-spi` (the high-speed CH347 bridge:
+the same SPI-flash opcodes over the CH347 `0xC0`/`0xC1`/`0xC2` command protocol
+on USB interface 2, in `source/corrado_ch347.c`). The CH347 is the fastest
+option and the bench choice for high-volume flashing.
+
+For a plain-language bench workflow aimed at working mechanics — setup checks,
+safe-flashing steps, chip handling and troubleshooting — see
+[`FIELD_GUIDE.md`](FIELD_GUIDE.md). Run `corrado-eprom doctor` to verify your
+setup and `corrado-eprom list` to see every supported programmer.
 
 The set of supported programmers is **data, not code**: it lives in the
 `corrado_prog_desc_t` registry (`usb-driver/corrado_prog.h`,

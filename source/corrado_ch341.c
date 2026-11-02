@@ -24,6 +24,15 @@
 
 #include <string.h>
 
+/* ---- Descriptive metadata (version 1.11 nested-friendly accessors) ----
+ * Worker-class artifact (single-purpose SPI protocol wrapper); baseline id.
+ *   metaVersion = "1.0.0"         metaId = 3
+ *   metaAuthor  = "mearvk"        metaDate = "2026-11-02"
+ *   metaOrigin  = "International"  metaBirthDate = "2026-11-02"
+ *   metaScienceRating = 5         metaNationalSchedule = "JEDEC JESD216 (SFDP)"
+ * (JESD216 is the real serial-flash discoverable-parameter standard the SPI
+ *  NOR opcodes used here conform to.) Full suite record: corrado_metadata.c. */
+
 #define CH341_CMD_SPI_STREAM 0xA8u
 #define CH341_PACKET_LEN     0x20u   /* 32-byte USB packet granularity */
 

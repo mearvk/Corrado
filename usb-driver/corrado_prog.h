@@ -52,7 +52,8 @@ extern "C" {
  */
 typedef enum {
     CORRADO_FAMILY_MINIPRO = 0,
-    CORRADO_FAMILY_CH341A
+    CORRADO_FAMILY_CH341A,
+    CORRADO_FAMILY_CH347
 } corrado_prog_family_t;
 
 /*
@@ -71,6 +72,8 @@ typedef struct {
     uint16_t              pid;        /* USB product id                       */
     uint8_t               ep_out;     /* bulk OUT endpoint                    */
     uint8_t               ep_in;      /* bulk IN endpoint                     */
+    uint8_t               iface;      /* USB interface to claim (0 for most;
+                                       *   2 for the CH347)                   */
     uint16_t              block;      /* transfer granularity, bytes          */
     uint8_t               cmd_read;   /* READ opcode (minipro) / SPI READ     */
     uint8_t               cmd_write;  /* WRITE opcode (minipro) / SPI PROGRAM */

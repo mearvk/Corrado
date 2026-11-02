@@ -24,6 +24,7 @@
 #include "corrado_eprom.h"
 #include "corrado_usb.h"
 #include "corrado_prog.h"
+#include "corrado_metadata.h"
 #include "corrado_profile.h"
 
 #include <stdio.h>
@@ -69,8 +70,11 @@ static int usage(const char *argv0)
         "Usage: %s <command> [args]\n"
         "  info                     show year/ECU/EPROM profile\n"
         "  list                     list supported programmers (no device needed)\n"
+        "  doctor                   diagnose the setup (libusb, permissions, device)\n"
+        "  meta                     show the suite's descriptive metadata record\n"
         "  read   <out.bin>         dump the chip to a file\n"
-        "  write  <in.bin> [--no-verify]  program the chip from a file\n"
+        "  write  <in.bin> [--no-verify] [--force]  program the chip from a file\n"
+        "                           (auto-backs-up the stock chip first unless --force)\n"
         "  verify <ref.bin>         compare chip against a file\n"
         "  blankcheck               confirm the chip is erased (all 0xFF)\n"
         "  backup [out.bin]         read the chip to a (timestamped) file\n"
@@ -111,7 +115,7 @@ static int cmd_list(void)
 {
     const corrado_prog_desc_t *d;
     printf("Supported programmers (%zu):\n", corrado_prog_count());
-    printf("  %-13s %-11s %-9s %-10s %s\n",
+    printf("  %-15s %-13s %-10s %-11s %s\n",
            "MODEL", "FAMILY", "USB ID", "BLOCK", "AUTO-DETECT");
     for (d = corrado_prog_table(); d->name; ++d) {
         char usbid[16];
@@ -119,11 +123,91 @@ static int cmd_list(void)
             snprintf(usbid, sizeof(usbid), "%04x:%04x", d->vid, d->pid);
         else
             snprintf(usbid, sizeof(usbid), "%04x:????", d->vid);
-        printf("  %-13s %-11s %-9s %4u bytes  %s\n",
+        printf("  %-15s %-13s %-10s %5u bytes  %s\n",
                d->name, corrado_prog_family_name(d->family), usbid,
                d->block, d->probe ? "yes" : "no (PID unconfirmed)");
     }
     return 0;
+}
+
+/* meta sub-command: print the suite's descriptive-metadata record. */
+static int cmd_meta(void)
+{
+    printf("Corrado EPROM suite - descriptive metadata:\n");
+    corrado_meta_print(corrado_suite_metadata());
+    return 0;
+}
+
+/*
+ * doctor sub-command: a plain-language setup check for a working mechanic.
+ * It walks the chain a read/write depends on -- USB subsystem, an attached
+ * known programmer, its family -- and prints a clear PASS/FAIL with the exact
+ * fix for whatever is wrong, instead of a bare error code. Exit 0 if ready.
+ */
+static int cmd_doctor(void)
+{
+    corrado_usb_dev_t *dev = NULL;
+    corrado_status_t st;
+    int problems = 0;
+
+    printf("Corrado EPROM Tool - setup doctor\n");
+    printf("---------------------------------\n");
+
+    /* 1. USB subsystem (libusb present and initialisable). */
+    st = corrado_usb_init();
+    if (st == CORRADO_OK) {
+        printf("  [ OK ] USB subsystem (libusb) initialised\n");
+    } else {
+        printf("  [FAIL] USB subsystem: %s\n", corrado_strerror(st));
+        printf("         -> install libusb-1.0 (see README Dependencies), or\n");
+        printf("            build with LIBUSB_VENDOR=1 to use the bundled copy.\n");
+        return 1; /* nothing else can be checked without USB */
+    }
+
+    /* 2. A known programmer attached and openable. */
+    st = corrado_usb_open(&dev);
+    if (st == CORRADO_OK) {
+        corrado_prog_model_t m = corrado_usb_model(dev);
+        printf("  [ OK ] Programmer detected: %s\n", corrado_prog_name(m));
+        printf("         family: %s\n",
+               corrado_prog_family_name(corrado_prog_find(m)
+                                        ? corrado_prog_find(m)->family
+                                        : CORRADO_FAMILY_MINIPRO));
+        corrado_usb_close(dev);
+    } else if (st == CORRADO_ERR_NO_DEVICE) {
+        problems++;
+        printf("  [WARN] No supported programmer found on USB\n");
+        printf("         -> plug the programmer in and seat the chip, then\n");
+        printf("            run 'corrado-eprom list' to see what is supported.\n");
+#ifndef _WIN32
+        printf("         -> on Linux, install the udev rule and join 'plugdev':\n");
+        printf("            sudo cp usb-driver/linux/60-corrado-tl866.rules \\\n");
+        printf("                 /etc/udev/rules.d/ && sudo udevadm control --reload-rules\n");
+        printf("            sudo usermod -aG plugdev \"$USER\"   (then log out/in)\n");
+#else
+        printf("         -> on Windows, bind the device to WinUSB with Zadig.\n");
+#endif
+    } else {
+        problems++;
+        printf("  [FAIL] Opening the programmer failed: %s\n",
+               corrado_strerror(st));
+#ifndef _WIN32
+        printf("         -> usually a permissions problem: install the udev\n");
+        printf("            rule and make sure you are in the 'plugdev' group.\n");
+#else
+        printf("         -> make sure the WinUSB driver is bound (use Zadig).\n");
+#endif
+    }
+
+    corrado_usb_exit();
+
+    printf("---------------------------------\n");
+    if (problems == 0) {
+        printf("  Ready: the tool can talk to your programmer.\n");
+        return 0;
+    }
+    printf("  Not ready yet: fix the item(s) above and re-run 'doctor'.\n");
+    return 1;
 }
 
 /* checksum sub-command works on a file only; no hardware needed. */
@@ -166,6 +250,12 @@ int main(int argc, char **argv)
     if (strcmp(argv[1], "list") == 0) {
         return cmd_list();
     }
+    if (strcmp(argv[1], "meta") == 0) {
+        return cmd_meta();
+    }
+    if (strcmp(argv[1], "doctor") == 0) {
+        return cmd_doctor();
+    }
     if (strcmp(argv[1], "checksum") == 0) {
         if (argc < 3) return usage(argv[0]);
         return cmd_checksum(argv[2], argc > 3 && !strcmp(argv[3], "--fix"));
@@ -197,6 +287,38 @@ int main(int argc, char **argv)
         }
     } else if (strcmp(argv[1], "write") == 0 && argc >= 3) {
         corrado_image_t img;
+        int force = 0, a;
+        for (a = 3; a < argc; ++a)
+            if (strcmp(argv[a], "--force") == 0) force = 1;
+
+        /*
+         * SAFETY GUARDRAIL: before overwriting an engine-ECU chip, capture
+         * the current contents to a timestamped backup so a mechanic always
+         * has the stock image to fall back to. Skip only with --force. A
+         * read failure here aborts the write (no device / bad seating), which
+         * is exactly when you must not proceed to program.
+         */
+        if (!force) {
+            char safe_name[160];
+            default_backup_name(safe_name, sizeof safe_name);
+            printf("  Safety     : backing up the current chip first...\n");
+            st = corrado_usb_backup(dev, type, safe_name,
+                                    progress, (void *)"backup");
+            if (st != CORRADO_OK) {
+                fprintf(stderr,
+                    "\n  Aborted    : could not back up the current chip (%s).\n"
+                    "               Fix the programmer/seating, or pass --force\n"
+                    "               to skip the backup and write anyway.\n",
+                    corrado_strerror(st));
+                corrado_usb_close(dev);
+                corrado_usb_exit();
+                return 1;
+            }
+            printf("\n  Stock saved: %s\n", safe_name);
+        } else {
+            printf("  Safety     : --force given, skipping pre-write backup\n");
+        }
+
         st = corrado_image_load(&img, argv[2], type);
         if (st == CORRADO_OK) {
             st = corrado_usb_write(dev, &img, progress, (void *)"writing");

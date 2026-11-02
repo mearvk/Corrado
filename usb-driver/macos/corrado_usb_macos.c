@@ -19,6 +19,7 @@
 #include "corrado_usb.h"
 #include "corrado_prog.h"
 #include "corrado_ch341.h"
+#include "corrado_ch347.h"
 
 #include <libusb-1.0/libusb.h>
 #include <stdlib.h>
@@ -84,14 +85,15 @@ corrado_status_t corrado_usb_open(corrado_usb_dev_t **out)
      * call is harmless and keeps the backend uniform with Linux. */
     libusb_set_auto_detach_kernel_driver(h, 1);
 
-    if (libusb_claim_interface(h, 0) != 0) {
+    /* Most units use interface 0; the CH347 exposes SPI on interface 2. */
+    if (libusb_claim_interface(h, desc->iface) != 0) {
         libusb_close(h);
         return CORRADO_ERR_USB;
     }
 
     d = (corrado_usb_dev_t *)calloc(1, sizeof(*d));
     if (!d) {
-        libusb_release_interface(h, 0);
+        libusb_release_interface(h, desc->iface);
         libusb_close(h);
         return CORRADO_ERR_IO;
     }
@@ -107,7 +109,7 @@ void corrado_usb_close(corrado_usb_dev_t *dev)
     if (!dev) return;
     if (dev->h) {
         if (dev->claimed_iface)
-            libusb_release_interface(dev->h, 0);
+            libusb_release_interface(dev->h, dev->desc->iface);
         libusb_close(dev->h);
     }
     free(dev);
@@ -203,6 +205,12 @@ corrado_status_t corrado_usb_read(corrado_usb_dev_t *dev,
         corrado_ch341_io_t io = ch341_io_for(dev);
         return corrado_ch341_read(&io, dev->desc, img, cb, user);
     }
+    if (dev->desc->family == CORRADO_FAMILY_CH347) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        corrado_status_t bst = corrado_ch347_begin(&io);
+        if (bst != CORRADO_OK) return bst;
+        return corrado_ch347_read(&io, dev->desc, img, cb, user);
+    }
     block = dev->desc->block;
 
     for (addr = 0; addr < img->size; addr += block) {
@@ -238,6 +246,12 @@ corrado_status_t corrado_usb_write(corrado_usb_dev_t *dev,
     if (dev->desc->family == CORRADO_FAMILY_CH341A) {
         corrado_ch341_io_t io = ch341_io_for(dev);
         return corrado_ch341_write(&io, dev->desc, img, cb, user);
+    }
+    if (dev->desc->family == CORRADO_FAMILY_CH347) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        corrado_status_t bst = corrado_ch347_begin(&io);
+        if (bst != CORRADO_OK) return bst;
+        return corrado_ch347_write(&io, dev->desc, img, cb, user);
     }
     block = dev->desc->block;
     if (block == 0 || block > CORRADO_MAX_BLOCK) return CORRADO_ERR_UNSUPPORTED;
@@ -281,6 +295,12 @@ corrado_status_t corrado_usb_blank_check(corrado_usb_dev_t *dev,
         corrado_ch341_io_t io = ch341_io_for(dev);
         return corrado_ch341_blank_check(&io, dev->desc, type);
     }
+    if (dev && dev->desc->family == CORRADO_FAMILY_CH347) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        corrado_status_t bst = corrado_ch347_begin(&io);
+        if (bst != CORRADO_OK) return bst;
+        return corrado_ch347_blank_check(&io, dev->desc, type);
+    }
 
     st = corrado_image_alloc(&img, type);
     if (st != CORRADO_OK) return st;
@@ -305,6 +325,12 @@ corrado_status_t corrado_usb_erase(corrado_usb_dev_t *dev,
     if (dev->desc->family == CORRADO_FAMILY_CH341A) {
         corrado_ch341_io_t io = ch341_io_for(dev);
         return corrado_ch341_erase(&io, dev->desc, type);
+    }
+    if (dev->desc->family == CORRADO_FAMILY_CH347) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        corrado_status_t bst = corrado_ch347_begin(&io);
+        if (bst != CORRADO_OK) return bst;
+        return corrado_ch347_erase(&io, dev->desc, type);
     }
     if (corrado_eprom_size(type) == 0) return CORRADO_ERR_UNSUPPORTED;
 

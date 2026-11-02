@@ -2,10 +2,15 @@
 
 Cross-platform tooling to read, write, verify and checksum the engine-ECU
 **EPROM of a Volkswagen Corrado (model years 1990–1996)** — the G60
-(Bosch Digifant) and VR6 (Bosch Motronic) cars — over USB. It drives two
+(Bosch Digifant) and VR6 (Bosch Motronic) cars — over USB. It drives three
 programmer families: the MiniPRO/XGecu **minipro** units (TL866A/CS, TL866II+,
-XGecu T48/T56, and the T76) and the WinChipHead **CH341A** USB-to-SPI dongle
-for SPI NOR parts. Run `corrado-eprom list` to see every supported programmer.
+XGecu T48/T56, and the T76), the WinChipHead **CH341A** USB-to-SPI dongle, and
+the high-speed **CH347** USB-to-SPI bridge for SPI NOR parts. Run
+`corrado-eprom list` to see every supported programmer, and `corrado-eprom
+doctor` to check your bench is ready.
+
+**Working at a bench?** See the [`docs/FIELD_GUIDE.md`](docs/FIELD_GUIDE.md) —
+a practical, ECU-saving workflow for mechanics.
 
 Supports **Windows 10+, Linux, and macOS**, with build systems, source,
 and USB drivers (in both **C** and **C++**) for all three.
@@ -54,12 +59,15 @@ Corrado/
 ├── Makefile                     # top-level: detects OS, delegates
 ├── include/
 │   ├── corrado_eprom.h          # EPROM/image/checksum API (OS-independent)
-│   └── corrado_usb.h            # USB programmer API (OS-independent)
+│   ├── corrado_usb.h            # USB programmer API (OS-independent)
+│   └── corrado_metadata.h       # Metadata Class metapattern (OS-independent)
 ├── source/
 │   ├── corrado_eprom.c          # shared image + checksum implementation
 │   ├── corrado_ops.c            # shared backup/copy/delete operations
 │   ├── corrado_prog.c           # shared supported-programmer registry
 │   ├── corrado_ch341.c          # shared CH341A SPI-flash protocol
+│   ├── corrado_ch347.c          # shared CH347 high-speed SPI protocol
+│   ├── corrado_metadata.c       # Metadata Class metapattern (suite record)
 │   ├── corrado_profile.h        # per-year ECU profile interface
 │   ├── main.c                   # shared CLI front end
 │   ├── linux/
@@ -75,6 +83,7 @@ Corrado/
 ├── usb-driver/
 │   ├── corrado_prog.h           # supported-programmer registry (table of models)
 │   ├── corrado_ch341.h          # CH341A SPI-flash protocol interface
+│   ├── corrado_ch347.h          # CH347 high-speed SPI protocol interface
 │   ├── corrado_usb.hpp          # portable C++ RAII wrapper (all 3 OSes)
 │   ├── example_cpp.cpp          # C++ usage example
 │   ├── linux/   corrado_usb_linux.c   + 60-corrado-tl866.rules (udev)
@@ -104,8 +113,9 @@ corrado-eprom list
 | XGecu T56        | `minipro`    | `0xA466` | `0x0053` |                        |
 | XGecu T76        | `minipro`    | `0xA466` | *(tbc)*  | recognised; PID unconfirmed, so not auto-probed |
 | CH341A (SPI)     | `ch341a-spi` | `0x1A86` | `0x5512` | USB-to-SPI dongle for SPI NOR parts |
+| CH347 (HS-SPI)   | `ch347-hs-spi`| `0x1A86`| `0x55DB` | USB 2.0 high-speed SPI bridge; fastest (bench use) |
 
-Two **protocol families** are implemented, and the backend dispatches on the
+Three **protocol families** are implemented, and the backend dispatches on the
 family field:
 
 - **`minipro`** — the MiniPRO/XGecu units, an 8-byte little-endian command
@@ -114,6 +124,10 @@ family field:
   with JEDEC opcodes (`0x03` read / `0x02` page-program / `0xC7` chip-erase)
   wrapped in the CH341 `0xA8` SPI-stream command. Implemented in the shared
   [`source/corrado_ch341.c`](source/corrado_ch341.c).
+- **`ch347-hs-spi`** — the high-speed CH347 bridge, the same SPI NOR opcodes
+  over the CH347 command protocol (`0xC0` init / `0xC1` CS / `0xC2` read-write)
+  on USB interface 2. The bench/"strong worker" choice for flashing many chips.
+  Implemented in [`source/corrado_ch347.c`](source/corrado_ch347.c).
 
 The **T76** is a real, shipping XGecu programmer, but its USB product id is not
 documented in a citable source, so rather than guess (which could open the
@@ -211,8 +225,10 @@ sudo usermod -aG plugdev "$USER"   # then log out/in
 ```sh
 corrado-eprom info                  # show the year/ECU/EPROM profile
 corrado-eprom list                  # list supported programmers (no device needed)
+corrado-eprom doctor                # diagnose the bench setup (plain-language)
+corrado-eprom meta                  # show the suite's descriptive-metadata record
 corrado-eprom read   stock.bin      # dump the chip (back up first!)
-corrado-eprom write  mytune.bin     # program the chip, then auto-verify
+corrado-eprom write  mytune.bin     # auto-back-up stock, program, then verify
 corrado-eprom verify mytune.bin     # compare chip against a file
 corrado-eprom blankcheck            # confirm the chip is erased (all 0xFF)
 corrado-eprom backup [out.bin]      # read chip -> file (auto-timestamped)
@@ -239,6 +255,22 @@ corrado-eprom checksum mytune.bin --fix   # check/repair trailing checksum
 The `checksum` command works on a file alone (no hardware needed) and can
 repair the Digifant/Motronic-style trailing checksum word so the 16-bit
 sum of the image is zero.
+
+### Safety guardrail on `write`
+
+`write` **automatically reads and saves the current chip to a timestamped
+backup before programming**, and aborts if that backup can't be taken (no
+device, bad seating). This guarantees a mechanic always has the stock image to
+fall back to. Pass `--force` to skip the pre-write backup (not recommended).
+
+### Setup doctor and metadata
+
+- `doctor` runs a plain-language setup check — USB subsystem, an attached
+  known programmer, and (on Linux) the udev/permissions chain — printing a
+  clear PASS/FAIL and the exact fix for anything wrong. Ideal first command on
+  a new bench.
+- `meta` prints the suite's descriptive-metadata record (the Metadata Class
+  metapattern, adapted to C in [`include/corrado_metadata.h`](include/corrado_metadata.h)).
 
 ## C vs C++ drivers
 

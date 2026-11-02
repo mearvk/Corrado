@@ -13,6 +13,14 @@
 
 #include <stddef.h>
 
+/* ---- Descriptive metadata (version 1.11 nested-friendly accessors) ----
+ * Worker-class artifact (single-purpose registry); baseline identity only.
+ *   metaVersion = "1.0.0"         metaId = 2
+ *   metaAuthor  = "mearvk"        metaDate = "2026-11-02"
+ *   metaOrigin  = "International"  metaBirthDate = "2026-11-02"
+ *   metaScienceRating = 6         metaNationalSchedule = "none"
+ * Full record for the suite: corrado_suite_metadata() in corrado_metadata.c. */
+
 /*
  * Two protocol families are supported (see corrado_prog_family_t):
  *
@@ -33,6 +41,13 @@
  *    SPI-stream command. This is a genuinely different wire protocol; the
  *    backend dispatches on the `family` field.
  *
+ *  - CH347: the WinChipHead CH347 (0x1A86/0x55DB), a USB 2.0 high-speed
+ *    USB-to-SPI bridge -- the bench-grade / "strong worker" programmer for
+ *    flashing many chips quickly. It drives the same SPI NOR JEDEC opcodes
+ *    but over the CH347 command protocol (0xC0 init / 0xC1 CS / 0xC2 rd-wr)
+ *    on interface 2, bulk endpoints 0x06/0x86. The `block` field is 0 (the
+ *    CH347 module chooses its own transaction size); the `iface` field is 2.
+ *
  * The `probe` column says whether a backend should auto-open that VID/PID.
  * The T76 is a real, shipping XGecu programmer, but its USB product id is not
  * publicly documented in a source we can cite; rather than invent one (which
@@ -44,16 +59,17 @@
  * last so a minipro programmer is preferred when both happen to be attached.
  */
 static const corrado_prog_desc_t k_table[] = {
-    /* model                 name          family                   vid      pid     epO   epI   blk   rd    wr    er    probe */
-    { CORRADO_PROG_T76,     "XGecu T76",   CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0000u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 0 },
-    { CORRADO_PROG_T56,     "XGecu T56",   CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0053u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
-    { CORRADO_PROG_T48,     "XGecu T48",   CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0001u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
-    { CORRADO_PROG_TL866II, "TL866II+",    CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0A53u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
-    { CORRADO_PROG_TL866A,  "TL866A/CS",   CORRADO_FAMILY_MINIPRO,  0x04D8u, 0xE11Cu, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
-    { CORRADO_PROG_CH341A,  "CH341A (SPI)",CORRADO_FAMILY_CH341A,   0x1A86u, 0x5512u, 0x02, 0x82, 0x20, 0x03, 0x02, 0xC7, 1 },
+    /* model                 name            family                   vid      pid     epO   epI   if   blk   rd    wr    er    probe */
+    { CORRADO_PROG_T76,     "XGecu T76",     CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0000u, 0x01, 0x81, 0,  0x80, 0x05, 0x06, 0x19, 0 },
+    { CORRADO_PROG_T56,     "XGecu T56",     CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0053u, 0x01, 0x81, 0,  0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_T48,     "XGecu T48",     CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0001u, 0x01, 0x81, 0,  0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_TL866II, "TL866II+",      CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0A53u, 0x01, 0x81, 0,  0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_TL866A,  "TL866A/CS",     CORRADO_FAMILY_MINIPRO,  0x04D8u, 0xE11Cu, 0x01, 0x81, 0,  0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_CH341A,  "CH341A (SPI)",  CORRADO_FAMILY_CH341A,   0x1A86u, 0x5512u, 0x02, 0x82, 0,  0x20, 0x03, 0x02, 0xC7, 1 },
+    { CORRADO_PROG_CH347,   "CH347 (HS-SPI)",CORRADO_FAMILY_CH347,    0x1A86u, 0x55DBu, 0x06, 0x86, 2,  0x00, 0x03, 0x02, 0xC7, 1 },
 
     /* sentinel */
-    { CORRADO_PROG_UNKNOWN, NULL,          CORRADO_FAMILY_MINIPRO,  0,       0,       0,    0,    0,    0,    0,    0,    0 }
+    { CORRADO_PROG_UNKNOWN, NULL,            CORRADO_FAMILY_MINIPRO,  0,       0,       0,    0,    0,  0,    0,    0,    0,    0 }
 };
 
 const corrado_prog_desc_t *corrado_prog_table(void)
@@ -89,6 +105,7 @@ const char *corrado_prog_family_name(corrado_prog_family_t family)
     switch (family) {
         case CORRADO_FAMILY_MINIPRO: return "minipro";
         case CORRADO_FAMILY_CH341A:  return "ch341a-spi";
+        case CORRADO_FAMILY_CH347:   return "ch347-hs-spi";
         default:                     return "unknown";
     }
 }
