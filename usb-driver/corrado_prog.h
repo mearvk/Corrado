@@ -55,6 +55,9 @@ typedef struct {
     uint8_t              cmd_read;    /* READ_CODE opcode                     */
     uint8_t              cmd_write;   /* WRITE_CODE opcode                    */
     uint8_t              cmd_erase;   /* chip ERASE opcode                    */
+    uint8_t              probe;       /* 1 = auto-probe this VID/PID; 0 = skip
+                                       *     (model recognised/named but its
+                                       *      USB id is not yet confirmed)    */
 } corrado_prog_desc_t;
 
 /*

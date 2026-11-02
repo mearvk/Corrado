@@ -51,6 +51,11 @@ rules):
 | TL866II+         | `0xA466` | `0x0A53` |
 | XGecu T48        | `0xA466` | `0x0001` |
 | XGecu T56        | `0xA466` | `0x0053` |
+| XGecu T76        | `0xA466` | *(tbc)*  |
+
+The XGecu **T76** is recognised by name but its USB product id is not yet
+confirmed from a citable source, so its registry entry is marked `probe=0`
+and it is not auto-detected until the real PID is filled in.
 
 The set of supported programmers is **data, not code**: it lives in the
 `corrado_prog_desc_t` registry (`usb-driver/corrado_prog.h`,

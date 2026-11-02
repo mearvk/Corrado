@@ -43,9 +43,12 @@ extern "C" {
 #define TL866A_PID    0xE11Cu
 #define TL866II_VID   0xA466u
 #define TL866II_PID   0x0A53u
-#define XGECU_VID     0xA466u   /* shared XGecu vendor id (T48/T56/TL866II+) */
+#define XGECU_VID     0xA466u   /* shared XGecu vendor id (T48/T56/T76/TL866II+) */
 #define T48_PID       0x0001u
 #define T56_PID       0x0053u
+/* XGecu T76: product id not yet publicly confirmed. The registry carries a
+ * descriptor for it but marks it probe=0 until the PID is verified, so the
+ * backends never try to open a device under a guessed id. */
 
 /* Bulk endpoints used by the minipro-family protocol. */
 #define TL866_EP_OUT  0x01u
@@ -63,6 +66,7 @@ typedef enum {
     CORRADO_PROG_TL866II,
     CORRADO_PROG_T48,
     CORRADO_PROG_T56,
+    CORRADO_PROG_T76,
     CORRADO_PROG_UNKNOWN
 } corrado_prog_model_t;
 

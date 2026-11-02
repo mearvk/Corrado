@@ -19,3 +19,8 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="a466", ATTR{idProduct}=="0001", MODE="0666", 
 
 # XGecu T56
 SUBSYSTEM=="usb", ATTR{idVendor}=="a466", ATTR{idProduct}=="0053", MODE="0666", GROUP="plugdev"
+
+# XGecu T76 (shares the XGecu VID; product id not yet publicly confirmed).
+# Uncomment and set the real idProduct once verified, then flip probe=1 for
+# the T76 entry in source/corrado_prog.c to enable auto-detection.
+#SUBSYSTEM=="usb", ATTR{idVendor}=="a466", ATTR{idProduct}=="xxxx", MODE="0666", GROUP="plugdev"

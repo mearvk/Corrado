@@ -53,8 +53,9 @@ static libusb_device_handle *open_known(const corrado_prog_desc_t **desc)
     const corrado_prog_desc_t *d;
 
     for (d = corrado_prog_table(); d->name; ++d) {
-        libusb_device_handle *h =
-            libusb_open_device_with_vid_pid(g_ctx, d->vid, d->pid);
+        libusb_device_handle *h;
+        if (!d->probe) continue;   /* skip models whose USB id is unconfirmed */
+        h = libusb_open_device_with_vid_pid(g_ctx, d->vid, d->pid);
         if (h) { *desc = d; return h; }
     }
     *desc = NULL;

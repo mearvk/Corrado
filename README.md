@@ -4,7 +4,7 @@ Cross-platform tooling to read, write, verify and checksum the engine-ECU
 **EPROM of a Volkswagen Corrado (model years 1990–1996)** — the G60
 (Bosch Digifant) and VR6 (Bosch Motronic) cars — using a MiniPRO/XGecu
 **minipro-family** USB chip programmer (TL866A/CS, TL866II+, XGecu T48,
-XGecu T56).
+XGecu T56, and the XGecu T76).
 
 Supports **Windows 10+, Linux, and macOS**, with build systems, source,
 and USB drivers (in both **C** and **C++**) for all three.
@@ -95,6 +95,13 @@ The tool drives the MiniPRO/XGecu minipro-family programmers over libusb:
 | TL866II+         | `0xA466` | `0x0A53` |                           |
 | XGecu T48        | `0xA466` | `0x0001` | a.k.a. TL866-3G           |
 | XGecu T56        | `0xA466` | `0x0053` |                           |
+| XGecu T76        | `0xA466` | *(tbc)*  | recognised; PID not yet publicly confirmed, so not auto-probed |
+
+The T76 is a real, shipping XGecu programmer in the same family. Its USB
+product id is not documented in a citable source, so rather than guess (which
+could open the wrong device), its registry entry is marked `probe=0`: it is
+recognised and named, but not auto-detected. Fill in the real PID in
+`source/corrado_prog.c` and set `probe` to `1` to enable it.
 
 The supported set is **data, not code**. It lives in a single registry —
 `corrado_prog_desc_t` in [`usb-driver/corrado_prog.h`](usb-driver/corrado_prog.h)
