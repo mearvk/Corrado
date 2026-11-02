@@ -14,6 +14,7 @@ INCLUDE   := $(ROOT)/include
 COMMON    := $(ROOT)/source
 PROFILES  := $(COMMON)/macos
 USBDIR    := $(ROOT)/usb-driver/macos
+USBCOMMON := $(ROOT)/usb-driver
 BUILD     := $(ROOT)/build/macos
 
 YEARS     := 1990 1991 1992 1993 1994 1995 1996
@@ -29,10 +30,11 @@ PKG_CFLAGS := -I/opt/homebrew/include -I/usr/local/include
 PKG_LIBS   := -L/opt/homebrew/lib -L/usr/local/lib -lusb-1.0
 endif
 
-CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR) $(PKG_CFLAGS)
+CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR) -I$(USBCOMMON) $(PKG_CFLAGS)
 LDLIBS    += $(PKG_LIBS)
 
-COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c $(COMMON)/main.c
+COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c \
+              $(COMMON)/corrado_prog.c $(COMMON)/main.c
 USB_SRC    := $(USBDIR)/corrado_usb_macos.c
 
 ifdef YEAR

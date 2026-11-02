@@ -38,17 +38,28 @@ The calibration ("tune") lives in a **socketed 28-pin DIP EPROM** of the
 
 ## USB programmer
 
-The reference programmer is the **MiniPRO TL866 family**
-(TL866A / TL866CS / TL866II+ / T48), the common open-hardware EPROM
-programmer. The open-source `minipro` project drives it over `libusb`,
-and this suite follows the same transport model.
+The reference programmers are the **MiniPRO / XGecu minipro family**, the
+common open-hardware EPROM programmers. The open-source `minipro` project
+drives them over `libusb`, and this suite follows the same transport model.
 
-USB identifiers used by the drivers:
+USB identifiers used by the drivers (matching the upstream `minipro` udev
+rules):
 
 | Model            | VID      | PID      |
 |------------------|----------|----------|
 | TL866A / TL866CS | `0x04D8` | `0xE11C` |
 | TL866II+         | `0xA466` | `0x0A53` |
+| XGecu T48        | `0xA466` | `0x0001` |
+| XGecu T56        | `0xA466` | `0x0053` |
+
+The set of supported programmers is **data, not code**: it lives in the
+`corrado_prog_desc_t` registry (`usb-driver/corrado_prog.h`,
+`source/corrado_prog.c`), a table pairing each VID/PID with its model
+identity and bulk-protocol parameters (endpoints, transfer block size,
+command opcodes). Every per-OS backend walks that table to find and drive an
+attached device, so adding another programmer that speaks the same
+minipro-style framing is a one-line entry — no backend edits. A unit that
+needs different framing supplies its own opcodes in the descriptor.
 
 Insert the 27C256 into the ZIF socket at the position the programmer marks
 for a 28-pin device (pin 1 toward the lever), then use the CLI:

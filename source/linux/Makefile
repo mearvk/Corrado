@@ -20,6 +20,7 @@ INCLUDE   := $(ROOT)/include
 COMMON    := $(ROOT)/source
 PROFILES  := $(COMMON)/linux
 USBDIR    := $(ROOT)/usb-driver/linux
+USBCOMMON := $(ROOT)/usb-driver
 BUILD     := $(ROOT)/build/linux
 VENDOR    := $(ROOT)/vendor/libusb
 
@@ -28,9 +29,10 @@ TARGET    := corrado-eprom
 
 CC        ?= cc
 CFLAGS    ?= -O2 -Wall -Wextra -std=c11
-CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR)
+CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR) -I$(USBCOMMON)
 
-COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c $(COMMON)/main.c
+COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c \
+              $(COMMON)/corrado_prog.c $(COMMON)/main.c
 USB_SRC    := $(USBDIR)/corrado_usb_linux.c
 
 # --- USB transport selection -------------------------------------------------

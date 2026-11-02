@@ -3,7 +3,10 @@
  *
  * Linux USB backend for the Corrado EPROM programmer, built on libusb-1.0.
  *
- * Hardware: MiniPRO TL866 family (TL866A/CS, TL866II+).
+ * Hardware: MiniPRO / XGecu minipro family (TL866A/CS, TL866II+, T48, T56).
+ *           The set of supported programmers is the corrado_prog_desc_t
+ *           registry (usb-driver/corrado_prog.c); this backend is data-driven
+ *           off it and carries no per-model constants.
  * Build:    cc ... -lusb-1.0
  * Access:   install the udev rule in this directory so a non-root user in
  *           the 'plugdev' group can open the device.
@@ -12,15 +15,16 @@
  */
 
 #include "corrado_usb.h"
+#include "corrado_prog.h"
 
 #include <libusb-1.0/libusb.h>
 #include <stdlib.h>
 #include <string.h>
 
 struct corrado_usb_dev {
-    libusb_device_handle *h;
-    corrado_prog_model_t  model;
-    int                   claimed_iface;
+    libusb_device_handle      *h;
+    const corrado_prog_desc_t *desc;  /* descriptor for the opened model */
+    int                        claimed_iface;
 };
 
 static libusb_context *g_ctx = NULL;
@@ -43,26 +47,25 @@ void corrado_usb_exit(void)
     }
 }
 
-/* Try to open one of the known TL866 VID/PID pairs. */
-static libusb_device_handle *open_known(corrado_prog_model_t *model)
+/* Walk the programmer registry and open the first attached known device. */
+static libusb_device_handle *open_known(const corrado_prog_desc_t **desc)
 {
-    libusb_device_handle *h;
+    const corrado_prog_desc_t *d;
 
-    h = libusb_open_device_with_vid_pid(g_ctx, TL866II_VID, TL866II_PID);
-    if (h) { *model = CORRADO_PROG_TL866II; return h; }
-
-    h = libusb_open_device_with_vid_pid(g_ctx, TL866A_VID, TL866A_PID);
-    if (h) { *model = CORRADO_PROG_TL866A; return h; }
-
-    *model = CORRADO_PROG_UNKNOWN;
+    for (d = corrado_prog_table(); d->name; ++d) {
+        libusb_device_handle *h =
+            libusb_open_device_with_vid_pid(g_ctx, d->vid, d->pid);
+        if (h) { *desc = d; return h; }
+    }
+    *desc = NULL;
     return NULL;
 }
 
 corrado_status_t corrado_usb_open(corrado_usb_dev_t **out)
 {
-    corrado_usb_dev_t   *d;
-    corrado_prog_model_t model;
-    libusb_device_handle *h;
+    corrado_usb_dev_t         *d;
+    const corrado_prog_desc_t *desc;
+    libusb_device_handle      *h;
 
     if (!out) return CORRADO_ERR_ARG;
     if (!g_ctx) {
@@ -70,7 +73,7 @@ corrado_status_t corrado_usb_open(corrado_usb_dev_t **out)
         if (st != CORRADO_OK) return st;
     }
 
-    h = open_known(&model);
+    h = open_known(&desc);
     if (!h) return CORRADO_ERR_NO_DEVICE;
 
     /* Detach a kernel driver if one grabbed the interface. */
@@ -88,7 +91,7 @@ corrado_status_t corrado_usb_open(corrado_usb_dev_t **out)
         return CORRADO_ERR_IO;
     }
     d->h = h;
-    d->model = model;
+    d->desc = desc;
     d->claimed_iface = 1;
     *out = d;
     return CORRADO_OK;
@@ -107,27 +110,25 @@ void corrado_usb_close(corrado_usb_dev_t *dev)
 
 corrado_prog_model_t corrado_usb_model(const corrado_usb_dev_t *dev)
 {
-    return dev ? dev->model : CORRADO_PROG_UNKNOWN;
+    return (dev && dev->desc) ? dev->desc->model : CORRADO_PROG_UNKNOWN;
 }
 
-/* ---- TL866 bulk framing (simplified) ---------------------------------- */
+/* ---- minipro-family bulk framing -------------------------------------- */
 /*
- * The TL866 protocol exchanges fixed-size command blocks over bulk
- * endpoints 0x01 (OUT) and 0x81 (IN). The command bytes below follow the
- * minipro open-source project's conventions. Addresses and lengths are
+ * The minipro-family protocol (TL866A/CS, TL866II+, XGecu T48/T56) exchanges
+ * fixed-size command blocks over the bulk endpoints named in the opened
+ * device's descriptor. The opcodes, endpoints and block size all come from
+ * that descriptor (see corrado_prog.c) rather than fixed macros, so the
+ * transfer code carries no per-model constants. Addresses and lengths are
  * little-endian. This is a readable reference implementation of the EPROM
  * read / write path for the 27C-series parts used in Corrado ECUs.
  */
-#define TL866_CMD_READ_CODE  0x05
-#define TL866_CMD_WRITE_CODE 0x06
-#define TL866_CMD_ERASE      0x19  /* chip erase (reusable/flash parts)   */
-#define TL866_BLOCK          0x80  /* 128-byte transfer granularity */
 
 static corrado_status_t bulk_out(corrado_usb_dev_t *d,
                                  const uint8_t *buf, int len)
 {
     int moved = 0;
-    int r = libusb_bulk_transfer(d->h, TL866_EP_OUT, (unsigned char *)buf,
+    int r = libusb_bulk_transfer(d->h, d->desc->ep_out, (unsigned char *)buf,
                                  len, &moved, CORRADO_USB_TIMEOUT_MS);
     if (r == LIBUSB_ERROR_TIMEOUT) return CORRADO_ERR_TIMEOUT;
     if (r != 0 || moved != len)    return CORRADO_ERR_USB;
@@ -137,7 +138,7 @@ static corrado_status_t bulk_out(corrado_usb_dev_t *d,
 static corrado_status_t bulk_in(corrado_usb_dev_t *d, uint8_t *buf, int len)
 {
     int moved = 0;
-    int r = libusb_bulk_transfer(d->h, TL866_EP_IN, buf, len, &moved,
+    int r = libusb_bulk_transfer(d->h, d->desc->ep_in, buf, len, &moved,
                                  CORRADO_USB_TIMEOUT_MS);
     if (r == LIBUSB_ERROR_TIMEOUT) return CORRADO_ERR_TIMEOUT;
     if (r != 0 || moved != len)    return CORRADO_ERR_USB;
@@ -152,22 +153,26 @@ static void put_le32(uint8_t *p, uint32_t v)
     p[3] = (uint8_t)((v >> 24) & 0xFF);
 }
 
+/* Largest transfer block any registered model uses; sizes the write frame. */
+#define CORRADO_MAX_BLOCK 0x80
+
 corrado_status_t corrado_usb_read(corrado_usb_dev_t *dev,
                                   corrado_image_t *img,
                                   corrado_progress_cb cb, void *user)
 {
-    size_t addr;
+    size_t addr, block;
     uint8_t cmd[8];
     corrado_status_t st;
 
     if (!dev || !img || !img->data) return CORRADO_ERR_ARG;
+    block = dev->desc->block;
 
-    for (addr = 0; addr < img->size; addr += TL866_BLOCK) {
+    for (addr = 0; addr < img->size; addr += block) {
         size_t blk = img->size - addr;
-        if (blk > TL866_BLOCK) blk = TL866_BLOCK;
+        if (blk > block) blk = block;
 
         memset(cmd, 0, sizeof(cmd));
-        cmd[0] = TL866_CMD_READ_CODE;
+        cmd[0] = dev->desc->cmd_read;
         cmd[1] = (uint8_t)blk;
         put_le32(&cmd[2], (uint32_t)addr);
 
@@ -186,19 +191,21 @@ corrado_status_t corrado_usb_write(corrado_usb_dev_t *dev,
                                    const corrado_image_t *img,
                                    corrado_progress_cb cb, void *user)
 {
-    size_t addr;
-    uint8_t frame[8 + TL866_BLOCK];
+    size_t addr, block;
+    uint8_t frame[8 + CORRADO_MAX_BLOCK];
     corrado_status_t st;
     corrado_image_t readback;
 
     if (!dev || !img || !img->data) return CORRADO_ERR_ARG;
+    block = dev->desc->block;
+    if (block == 0 || block > CORRADO_MAX_BLOCK) return CORRADO_ERR_UNSUPPORTED;
 
-    for (addr = 0; addr < img->size; addr += TL866_BLOCK) {
+    for (addr = 0; addr < img->size; addr += block) {
         size_t blk = img->size - addr;
-        if (blk > TL866_BLOCK) blk = TL866_BLOCK;
+        if (blk > block) blk = block;
 
         memset(frame, 0, sizeof(frame));
-        frame[0] = TL866_CMD_WRITE_CODE;
+        frame[0] = dev->desc->cmd_write;
         frame[1] = (uint8_t)blk;
         put_le32(&frame[2], (uint32_t)addr);
         memcpy(&frame[8], img->data + addr, blk);
@@ -260,7 +267,7 @@ corrado_status_t corrado_usb_erase(corrado_usb_dev_t *dev,
      * (SST27SF512, W27C512, 28C256, ...) accept the command.
      */
     memset(cmd, 0, sizeof(cmd));
-    cmd[0] = TL866_CMD_ERASE;
+    cmd[0] = dev->desc->cmd_erase;
     cmd[1] = (uint8_t)type;
 
     st = bulk_out(dev, cmd, (int)sizeof(cmd));

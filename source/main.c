@@ -23,6 +23,7 @@
 
 #include "corrado_eprom.h"
 #include "corrado_usb.h"
+#include "corrado_prog.h"
 #include "corrado_profile.h"
 
 #include <stdio.h>
@@ -160,10 +161,7 @@ int main(int argc, char **argv)
         corrado_usb_exit();
         return 1;
     }
-    printf("  Programmer : %s\n",
-           corrado_usb_model(dev) == CORRADO_PROG_TL866II ? "TL866II+" :
-           corrado_usb_model(dev) == CORRADO_PROG_TL866A  ? "TL866A/CS" :
-                                                            "unknown");
+    printf("  Programmer : %s\n", corrado_prog_name(corrado_usb_model(dev)));
 
     if (strcmp(argv[1], "read") == 0 && argc >= 3) {
         corrado_image_t img;

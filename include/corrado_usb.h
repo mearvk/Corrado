@@ -3,12 +3,19 @@
  *
  * OS-independent USB programmer interface for the Corrado EPROM suite.
  *
- * The reference programmer hardware is the MiniPRO TL866 family
- * (TL866A / TL866CS / TL866II+ / T48), the de-facto open-hardware
- * EPROM programmer driven by libusb on all three platforms.
+ * The reference programmer hardware is the MiniPRO / XGecu minipro family,
+ * the de-facto open-hardware EPROM programmers driven by libusb on all three
+ * platforms. Supported models (see usb-driver/corrado_prog.c for the table):
  *
  *   TL866A / TL866CS : USB VID 0x04D8 (Microchip) PID 0xE11C
  *   TL866II+         : USB VID 0xA466            PID 0x0A53
+ *   XGecu T48        : USB VID 0xA466            PID 0x0001  (TL866-3G)
+ *   XGecu T56        : USB VID 0xA466            PID 0x0053
+ *
+ * The set of supported programmers is DATA, not code: it lives in the
+ * corrado_prog_desc_t registry (usb-driver/corrado_prog.h, corrado_prog.c),
+ * which each backend walks to find and drive an attached device. Adding a
+ * model that speaks the same minipro-style framing is a one-line table entry.
  *
  * Each OS provides a backend implementing the functions declared here:
  *   - usb-driver/linux   : libusb-1.0 backend
@@ -27,22 +34,35 @@
 extern "C" {
 #endif
 
-/* Known TL866-family USB identifiers. */
+/*
+ * Known minipro-family USB identifiers. These remain as named constants for
+ * reference and backward compatibility; the authoritative, extensible list is
+ * the corrado_prog_desc_t registry in corrado_prog.c, which the backends use.
+ */
 #define TL866A_VID    0x04D8u
 #define TL866A_PID    0xE11Cu
 #define TL866II_VID   0xA466u
 #define TL866II_PID   0x0A53u
+#define XGECU_VID     0xA466u   /* shared XGecu vendor id (T48/T56/TL866II+) */
+#define T48_PID       0x0001u
+#define T56_PID       0x0053u
 
-/* Bulk endpoints used by the TL866 protocol. */
+/* Bulk endpoints used by the minipro-family protocol. */
 #define TL866_EP_OUT  0x01u
 #define TL866_EP_IN   0x81u
 
 /* Default USB transfer timeout, milliseconds. */
 #define CORRADO_USB_TIMEOUT_MS 5000
 
+/*
+ * Supported programmer models. The numeric values are stable so they can be
+ * stored/logged; new models are appended before CORRADO_PROG_UNKNOWN.
+ */
 typedef enum {
     CORRADO_PROG_TL866A = 0,
     CORRADO_PROG_TL866II,
+    CORRADO_PROG_T48,
+    CORRADO_PROG_T56,
     CORRADO_PROG_UNKNOWN
 } corrado_prog_model_t;
 

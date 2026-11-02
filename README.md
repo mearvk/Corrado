@@ -2,8 +2,9 @@
 
 Cross-platform tooling to read, write, verify and checksum the engine-ECU
 **EPROM of a Volkswagen Corrado (model years 1990–1996)** — the G60
-(Bosch Digifant) and VR6 (Bosch Motronic) cars — using a MiniPRO **TL866**
-family USB chip programmer.
+(Bosch Digifant) and VR6 (Bosch Motronic) cars — using a MiniPRO/XGecu
+**minipro-family** USB chip programmer (TL866A/CS, TL866II+, XGecu T48,
+XGecu T56).
 
 Supports **Windows 10+, Linux, and macOS**, with build systems, source,
 and USB drivers (in both **C** and **C++**) for all three.
@@ -56,6 +57,7 @@ Corrado/
 ├── source/
 │   ├── corrado_eprom.c          # shared image + checksum implementation
 │   ├── corrado_ops.c            # shared backup/copy/delete operations
+│   ├── corrado_prog.c           # shared supported-programmer registry
 │   ├── corrado_profile.h        # per-year ECU profile interface
 │   ├── main.c                   # shared CLI front end
 │   ├── linux/
@@ -69,6 +71,7 @@ Corrado/
 │       ├── Makefile
 │       └── 1990/ … 1996/
 ├── usb-driver/
+│   ├── corrado_prog.h           # supported-programmer registry (table of models)
 │   ├── corrado_usb.hpp          # portable C++ RAII wrapper (all 3 OSes)
 │   ├── example_cpp.cpp          # C++ usage example
 │   ├── linux/   corrado_usb_linux.c   + 60-corrado-tl866.rules (udev)
@@ -81,6 +84,30 @@ Corrado/
 Each `source/<os>/<year>/profile.c` encodes that model year's engine, ECU
 system, VW part number, and stock EPROM device, so the resulting binary
 knows what chip it is talking to.
+
+## Supported programmers
+
+The tool drives the MiniPRO/XGecu minipro-family programmers over libusb:
+
+| Model            | USB VID  | USB PID  | Notes                     |
+|------------------|----------|----------|---------------------------|
+| TL866A / TL866CS | `0x04D8` | `0xE11C` | original Microchip-VID units |
+| TL866II+         | `0xA466` | `0x0A53` |                           |
+| XGecu T48        | `0xA466` | `0x0001` | a.k.a. TL866-3G           |
+| XGecu T56        | `0xA466` | `0x0053` |                           |
+
+The supported set is **data, not code**. It lives in a single registry —
+`corrado_prog_desc_t` in [`usb-driver/corrado_prog.h`](usb-driver/corrado_prog.h)
+with the table in [`source/corrado_prog.c`](source/corrado_prog.c) — pairing
+each USB VID/PID with the model's identity and bulk-protocol parameters
+(endpoints, transfer block size, read/write/erase opcodes). Every per-OS
+backend walks that table to find and drive an attached device; none of them
+carry hard-coded model constants any more.
+
+**Adding another programmer** that speaks the same minipro-style framing is a
+one-line entry in the `corrado_prog.c` table (plus a `corrado_prog_model_t`
+value and a udev line) — no backend edits. A unit that needs different framing
+supplies its own opcodes/endpoints/block size in the same descriptor.
 
 ## Dependencies
 

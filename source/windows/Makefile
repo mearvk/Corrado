@@ -15,6 +15,7 @@ INCLUDE   := $(ROOT)/include
 COMMON    := $(ROOT)/source
 PROFILES  := $(COMMON)/windows
 USBDIR    := $(ROOT)/usb-driver/windows
+USBCOMMON := $(ROOT)/usb-driver
 BUILD     := $(ROOT)/build/windows
 
 YEARS     := 1990 1991 1992 1993 1994 1995 1996
@@ -22,10 +23,11 @@ TARGET    := corrado-eprom.exe
 
 CC        ?= gcc
 CFLAGS    ?= -O2 -Wall -Wextra -std=c11
-CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR)
+CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR) -I$(USBCOMMON)
 LDLIBS    += -lusb-1.0
 
-COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c $(COMMON)/main.c
+COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c \
+              $(COMMON)/corrado_prog.c $(COMMON)/main.c
 USB_SRC    := $(USBDIR)/corrado_usb_windows.c
 
 ifdef YEAR

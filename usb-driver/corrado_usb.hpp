@@ -12,6 +12,7 @@
 #define CORRADO_USB_HPP
 
 #include "corrado_usb.h"
+#include "corrado_prog.h"
 
 #include <functional>
 #include <stdexcept>
@@ -61,13 +62,7 @@ public:
 
     corrado_prog_model_t model() const { return corrado_usb_model(dev_); }
 
-    std::string modelName() const {
-        switch (model()) {
-            case CORRADO_PROG_TL866A:  return "TL866A/CS";
-            case CORRADO_PROG_TL866II: return "TL866II+";
-            default:                   return "unknown";
-        }
-    }
+    std::string modelName() const { return corrado_prog_name(model()); }
 
     /* Read the whole device into a byte vector. */
     std::vector<std::uint8_t> read(corrado_eprom_type_t type,
