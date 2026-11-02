@@ -35,27 +35,47 @@ extern "C" {
 #endif
 
 /*
+ * Protocol family: the wire framing a programmer speaks. The backend's
+ * read/write/erase path dispatches on this, so families with completely
+ * different framing can coexist in one registry.
+ *
+ *   CORRADO_FAMILY_MINIPRO - MiniPRO/XGecu minipro protocol: an 8-byte
+ *       little-endian command header [cmd, len, le32 addr, pad, pad] over
+ *       bulk endpoints, one data block per command. Covers TL866A/CS,
+ *       TL866II+, T48, T56, T76.
+ *
+ *   CORRADO_FAMILY_CH341A - WinChipHead CH341A USB-to-SPI bridge driving a
+ *       standard SPI NOR flash (JEDEC 0x03 read / 0x02 page program / 0x06
+ *       write-enable / 0x05 read-status / 0xC7 chip erase), wrapped in the
+ *       CH341 0xA8 SPI-stream command. Covers the ubiquitous "CH341A
+ *       mini programmer" dongles used for SPI BIOS/EEPROM chips.
+ */
+typedef enum {
+    CORRADO_FAMILY_MINIPRO = 0,
+    CORRADO_FAMILY_CH341A
+} corrado_prog_family_t;
+
+/*
  * Protocol parameters + identity for one supported programmer model.
  *
- * The TL866 family (TL866A/CS, TL866II+) and the XGecu successors (T48, T56)
- * all share the same minipro-style bulk framing: an 8-byte little-endian
- * command header [cmd, len, le32 addr, pad, pad] followed, for writes, by the
- * data block; reads return one data block per command. The fields below
- * capture everything the backend needs so the transfer code carries no
- * model-specific constants of its own.
+ * For the minipro family the cmd_read/cmd_write/cmd_erase fields are the
+ * minipro opcodes; for the CH341A family they are the SPI-flash JEDEC opcodes
+ * (0x03/0x02/0xC7). In both cases ep_out/ep_in/block come from the device's
+ * documented transport, so the transfer code carries no per-model constants.
  */
 typedef struct {
-    corrado_prog_model_t model;      /* enum identity                        */
-    const char          *name;       /* human-readable label, e.g. "TL866II+" */
-    uint16_t             vid;         /* USB vendor id                        */
-    uint16_t             pid;         /* USB product id                       */
-    uint8_t              ep_out;      /* bulk OUT endpoint                    */
-    uint8_t              ep_in;       /* bulk IN endpoint                     */
-    uint16_t             block;       /* transfer granularity, bytes          */
-    uint8_t              cmd_read;    /* READ_CODE opcode                     */
-    uint8_t              cmd_write;   /* WRITE_CODE opcode                    */
-    uint8_t              cmd_erase;   /* chip ERASE opcode                    */
-    uint8_t              probe;       /* 1 = auto-probe this VID/PID; 0 = skip
+    corrado_prog_model_t  model;     /* enum identity                        */
+    const char           *name;      /* human-readable label, e.g. "TL866II+" */
+    corrado_prog_family_t family;    /* wire protocol family (dispatch key)  */
+    uint16_t              vid;        /* USB vendor id                        */
+    uint16_t              pid;        /* USB product id                       */
+    uint8_t               ep_out;     /* bulk OUT endpoint                    */
+    uint8_t               ep_in;      /* bulk IN endpoint                     */
+    uint16_t              block;      /* transfer granularity, bytes          */
+    uint8_t               cmd_read;   /* READ opcode (minipro) / SPI READ     */
+    uint8_t               cmd_write;  /* WRITE opcode (minipro) / SPI PROGRAM */
+    uint8_t               cmd_erase;  /* ERASE opcode (minipro) / SPI CHIP ER */
+    uint8_t               probe;      /* 1 = auto-probe this VID/PID; 0 = skip
                                        *     (model recognised/named but its
                                        *      USB id is not yet confirmed)    */
 } corrado_prog_desc_t;
@@ -78,6 +98,9 @@ const corrado_prog_desc_t *corrado_prog_find(corrado_prog_model_t model);
 
 /* Human-readable name for a model (never NULL; "unknown" if unmatched). */
 const char *corrado_prog_name(corrado_prog_model_t model);
+
+/* Human-readable name for a protocol family (never NULL). */
+const char *corrado_prog_family_name(corrado_prog_family_t family);
 
 #ifdef __cplusplus
 } /* extern "C" */

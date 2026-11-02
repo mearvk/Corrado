@@ -14,40 +14,46 @@
 #include <stddef.h>
 
 /*
- * All currently supported units are the MiniPRO/XGecu minipro-family
- * programmers, which share the same bulk framing (8-byte LE command header,
- * 128-byte transfer block, endpoints 0x01/0x81, opcodes 0x05/0x06/0x19).
- * They are therefore described with the same protocol parameters and differ
- * only by USB id and label.
+ * Two protocol families are supported (see corrado_prog_family_t):
  *
- * VID/PIDs match the upstream open-source `minipro` project's udev rules and
- * the XGecu device enumeration:
- *   TL866A / TL866CS : 0x04D8 / 0xE11C   (Microchip PIC18F VID)
- *   TL866II+         : 0xA466 / 0x0A53
- *   XGecu T48        : 0xA466 / 0x0001   (a.k.a. TL866-3G)
- *   XGecu T56        : 0xA466 / 0x0053
- *   XGecu T76        : 0xA466 / (PID not yet publicly confirmed)
+ *  - MINIPRO: the MiniPRO/XGecu programmers, which share one bulk framing
+ *    (8-byte LE command header, 128-byte transfer block, endpoints
+ *    0x01/0x81, opcodes 0x05/0x06/0x19) and differ only by USB id and label.
+ *    VID/PIDs match the upstream open-source `minipro` project and the XGecu
+ *    device enumeration:
+ *      TL866A / TL866CS : 0x04D8 / 0xE11C   (Microchip PIC18F VID)
+ *      TL866II+         : 0xA466 / 0x0A53
+ *      XGecu T48        : 0xA466 / 0x0001   (a.k.a. TL866-3G)
+ *      XGecu T56        : 0xA466 / 0x0053
+ *      XGecu T76        : 0xA466 / (PID not yet publicly confirmed)
  *
- * The `probe` column says whether a backend should try to open that VID/PID.
- * The T76 is a real, shipping XGecu programmer in the same family, but its USB
- * product id is not publicly documented in a source we can cite; rather than
- * invent one (which could make the tool open the wrong device), it is listed
- * with probe=0 so it is recognised and named but never auto-opened until the
- * PID is confirmed. Fill in its real PID and flip probe to 1 to enable it.
+ *  - CH341A: the WinChipHead CH341A USB-to-SPI dongle (0x1A86/0x5512), bulk
+ *    endpoints 0x02/0x82, driving an SPI NOR flash with JEDEC opcodes
+ *    (0x03 read / 0x02 page-program / 0xC7 chip-erase) over the CH341 0xA8
+ *    SPI-stream command. This is a genuinely different wire protocol; the
+ *    backend dispatches on the `family` field.
  *
- * Probe order is newest-first so that, on the rare bus with more than one
- * programmer attached, the more capable successor is preferred.
+ * The `probe` column says whether a backend should auto-open that VID/PID.
+ * The T76 is a real, shipping XGecu programmer, but its USB product id is not
+ * publicly documented in a source we can cite; rather than invent one (which
+ * could make the tool open the wrong device), it is listed with probe=0 so it
+ * is recognised and named but never auto-opened until the PID is confirmed.
+ * Fill in its real PID and flip probe to 1 to enable it.
+ *
+ * Probe order is newest-first within the minipro family; the SPI CH341A is
+ * last so a minipro programmer is preferred when both happen to be attached.
  */
 static const corrado_prog_desc_t k_table[] = {
-    /* model                 name          vid      pid     epO   epI   blk   rd    wr    er    probe */
-    { CORRADO_PROG_T76,     "XGecu T76",   0xA466u, 0x0000u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 0 },
-    { CORRADO_PROG_T56,     "XGecu T56",   0xA466u, 0x0053u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
-    { CORRADO_PROG_T48,     "XGecu T48",   0xA466u, 0x0001u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
-    { CORRADO_PROG_TL866II, "TL866II+",    0xA466u, 0x0A53u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
-    { CORRADO_PROG_TL866A,  "TL866A/CS",   0x04D8u, 0xE11Cu, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
+    /* model                 name          family                   vid      pid     epO   epI   blk   rd    wr    er    probe */
+    { CORRADO_PROG_T76,     "XGecu T76",   CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0000u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 0 },
+    { CORRADO_PROG_T56,     "XGecu T56",   CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0053u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_T48,     "XGecu T48",   CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0001u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_TL866II, "TL866II+",    CORRADO_FAMILY_MINIPRO,  0xA466u, 0x0A53u, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_TL866A,  "TL866A/CS",   CORRADO_FAMILY_MINIPRO,  0x04D8u, 0xE11Cu, 0x01, 0x81, 0x80, 0x05, 0x06, 0x19, 1 },
+    { CORRADO_PROG_CH341A,  "CH341A (SPI)",CORRADO_FAMILY_CH341A,   0x1A86u, 0x5512u, 0x02, 0x82, 0x20, 0x03, 0x02, 0xC7, 1 },
 
     /* sentinel */
-    { CORRADO_PROG_UNKNOWN, NULL,          0,       0,       0,    0,    0,    0,    0,    0,    0 }
+    { CORRADO_PROG_UNKNOWN, NULL,          CORRADO_FAMILY_MINIPRO,  0,       0,       0,    0,    0,    0,    0,    0,    0 }
 };
 
 const corrado_prog_desc_t *corrado_prog_table(void)
@@ -76,4 +82,13 @@ const char *corrado_prog_name(corrado_prog_model_t model)
 {
     const corrado_prog_desc_t *d = corrado_prog_find(model);
     return d ? d->name : "unknown";
+}
+
+const char *corrado_prog_family_name(corrado_prog_family_t family)
+{
+    switch (family) {
+        case CORRADO_FAMILY_MINIPRO: return "minipro";
+        case CORRADO_FAMILY_CH341A:  return "ch341a-spi";
+        default:                     return "unknown";
+    }
 }

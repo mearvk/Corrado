@@ -39,32 +39,41 @@ The calibration ("tune") lives in a **socketed 28-pin DIP EPROM** of the
 ## USB programmer
 
 The reference programmers are the **MiniPRO / XGecu minipro family**, the
-common open-hardware EPROM programmers. The open-source `minipro` project
-drives them over `libusb`, and this suite follows the same transport model.
+common open-hardware EPROM programmers, driven over `libusb` the same way the
+open-source `minipro` project drives them. A second family, the WinChipHead
+**CH341A** USB-to-SPI dongle, is also supported for SPI NOR parts. Run
+`corrado-eprom list` to print every supported programmer and its family.
 
-USB identifiers used by the drivers (matching the upstream `minipro` udev
-rules):
+USB identifiers used by the drivers (minipro IDs match the upstream `minipro`
+udev rules; the CH341A id is the standard WinChipHead SPI bridge):
 
-| Model            | VID      | PID      |
-|------------------|----------|----------|
-| TL866A / TL866CS | `0x04D8` | `0xE11C` |
-| TL866II+         | `0xA466` | `0x0A53` |
-| XGecu T48        | `0xA466` | `0x0001` |
-| XGecu T56        | `0xA466` | `0x0053` |
-| XGecu T76        | `0xA466` | *(tbc)*  |
+| Model            | Family       | VID      | PID      |
+|------------------|--------------|----------|----------|
+| TL866A / TL866CS | `minipro`    | `0x04D8` | `0xE11C` |
+| TL866II+         | `minipro`    | `0xA466` | `0x0A53` |
+| XGecu T48        | `minipro`    | `0xA466` | `0x0001` |
+| XGecu T56        | `minipro`    | `0xA466` | `0x0053` |
+| XGecu T76        | `minipro`    | `0xA466` | *(tbc)*  |
+| CH341A (SPI)     | `ch341a-spi` | `0x1A86` | `0x5512` |
 
 The XGecu **T76** is recognised by name but its USB product id is not yet
 confirmed from a citable source, so its registry entry is marked `probe=0`
 and it is not auto-detected until the real PID is filled in.
 
+Two **protocol families** are implemented and the backend dispatches on the
+family field: `minipro` (8-byte LE command header over bulk endpoints) and
+`ch341a-spi` (the CH341 `0xA8` SPI-stream command carrying JEDEC SPI-flash
+opcodes — `0x03` read, `0x02` page-program, `0xC7` chip-erase — in
+`source/corrado_ch341.c`).
+
 The set of supported programmers is **data, not code**: it lives in the
 `corrado_prog_desc_t` registry (`usb-driver/corrado_prog.h`,
 `source/corrado_prog.c`), a table pairing each VID/PID with its model
-identity and bulk-protocol parameters (endpoints, transfer block size,
-command opcodes). Every per-OS backend walks that table to find and drive an
-attached device, so adding another programmer that speaks the same
-minipro-style framing is a one-line entry — no backend edits. A unit that
-needs different framing supplies its own opcodes in the descriptor.
+identity, protocol family and transport parameters (endpoints, block size,
+read/write/erase opcodes). Every per-OS backend walks that table to find and
+drive an attached device. Adding a programmer in an existing family is a
+one-line entry; adding a new family is one protocol module plus a dispatch
+branch.
 
 Insert the 27C256 into the ZIF socket at the position the programmer marks
 for a 28-pin device (pin 1 toward the lever), then use the CLI:

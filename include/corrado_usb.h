@@ -50,6 +50,12 @@ extern "C" {
  * descriptor for it but marks it probe=0 until the PID is verified, so the
  * backends never try to open a device under a guessed id. */
 
+/* WinChipHead CH341A USB-to-SPI bridge ("CH341A mini programmer" dongles). */
+#define CH341A_VID    0x1A86u
+#define CH341A_PID    0x5512u
+#define CH341A_EP_OUT 0x02u
+#define CH341A_EP_IN  0x82u
+
 /* Bulk endpoints used by the minipro-family protocol. */
 #define TL866_EP_OUT  0x01u
 #define TL866_EP_IN   0x81u
@@ -67,6 +73,7 @@ typedef enum {
     CORRADO_PROG_T48,
     CORRADO_PROG_T56,
     CORRADO_PROG_T76,
+    CORRADO_PROG_CH341A,
     CORRADO_PROG_UNKNOWN
 } corrado_prog_model_t;
 

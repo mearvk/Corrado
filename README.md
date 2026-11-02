@@ -2,9 +2,10 @@
 
 Cross-platform tooling to read, write, verify and checksum the engine-ECU
 **EPROM of a Volkswagen Corrado (model years 1990–1996)** — the G60
-(Bosch Digifant) and VR6 (Bosch Motronic) cars — using a MiniPRO/XGecu
-**minipro-family** USB chip programmer (TL866A/CS, TL866II+, XGecu T48,
-XGecu T56, and the XGecu T76).
+(Bosch Digifant) and VR6 (Bosch Motronic) cars — over USB. It drives two
+programmer families: the MiniPRO/XGecu **minipro** units (TL866A/CS, TL866II+,
+XGecu T48/T56, and the T76) and the WinChipHead **CH341A** USB-to-SPI dongle
+for SPI NOR parts. Run `corrado-eprom list` to see every supported programmer.
 
 Supports **Windows 10+, Linux, and macOS**, with build systems, source,
 and USB drivers (in both **C** and **C++**) for all three.
@@ -58,6 +59,7 @@ Corrado/
 │   ├── corrado_eprom.c          # shared image + checksum implementation
 │   ├── corrado_ops.c            # shared backup/copy/delete operations
 │   ├── corrado_prog.c           # shared supported-programmer registry
+│   ├── corrado_ch341.c          # shared CH341A SPI-flash protocol
 │   ├── corrado_profile.h        # per-year ECU profile interface
 │   ├── main.c                   # shared CLI front end
 │   ├── linux/
@@ -72,6 +74,7 @@ Corrado/
 │       └── 1990/ … 1996/
 ├── usb-driver/
 │   ├── corrado_prog.h           # supported-programmer registry (table of models)
+│   ├── corrado_ch341.h          # CH341A SPI-flash protocol interface
 │   ├── corrado_usb.hpp          # portable C++ RAII wrapper (all 3 OSes)
 │   ├── example_cpp.cpp          # C++ usage example
 │   ├── linux/   corrado_usb_linux.c   + 60-corrado-tl866.rules (udev)
@@ -87,34 +90,56 @@ knows what chip it is talking to.
 
 ## Supported programmers
 
-The tool drives the MiniPRO/XGecu minipro-family programmers over libusb:
+List them any time (no device required):
 
-| Model            | USB VID  | USB PID  | Notes                     |
-|------------------|----------|----------|---------------------------|
-| TL866A / TL866CS | `0x04D8` | `0xE11C` | original Microchip-VID units |
-| TL866II+         | `0xA466` | `0x0A53` |                           |
-| XGecu T48        | `0xA466` | `0x0001` | a.k.a. TL866-3G           |
-| XGecu T56        | `0xA466` | `0x0053` |                           |
-| XGecu T76        | `0xA466` | *(tbc)*  | recognised; PID not yet publicly confirmed, so not auto-probed |
+```sh
+corrado-eprom list
+```
 
-The T76 is a real, shipping XGecu programmer in the same family. Its USB
-product id is not documented in a citable source, so rather than guess (which
-could open the wrong device), its registry entry is marked `probe=0`: it is
-recognised and named, but not auto-detected. Fill in the real PID in
+| Model            | Family       | USB VID  | USB PID  | Notes                  |
+|------------------|--------------|----------|----------|------------------------|
+| TL866A / TL866CS | `minipro`    | `0x04D8` | `0xE11C` | original Microchip-VID units |
+| TL866II+         | `minipro`    | `0xA466` | `0x0A53` |                        |
+| XGecu T48        | `minipro`    | `0xA466` | `0x0001` | a.k.a. TL866-3G        |
+| XGecu T56        | `minipro`    | `0xA466` | `0x0053` |                        |
+| XGecu T76        | `minipro`    | `0xA466` | *(tbc)*  | recognised; PID unconfirmed, so not auto-probed |
+| CH341A (SPI)     | `ch341a-spi` | `0x1A86` | `0x5512` | USB-to-SPI dongle for SPI NOR parts |
+
+Two **protocol families** are implemented, and the backend dispatches on the
+family field:
+
+- **`minipro`** — the MiniPRO/XGecu units, an 8-byte little-endian command
+  header over bulk endpoints (one data block per command).
+- **`ch341a-spi`** — the ubiquitous CH341A dongle, driving an SPI NOR flash
+  with JEDEC opcodes (`0x03` read / `0x02` page-program / `0xC7` chip-erase)
+  wrapped in the CH341 `0xA8` SPI-stream command. Implemented in the shared
+  [`source/corrado_ch341.c`](source/corrado_ch341.c).
+
+The **T76** is a real, shipping XGecu programmer, but its USB product id is not
+documented in a citable source, so rather than guess (which could open the
+wrong device) its registry entry is marked `probe=0`: it is recognised and
+named, but not auto-detected. Fill in the real PID in
 `source/corrado_prog.c` and set `probe` to `1` to enable it.
 
 The supported set is **data, not code**. It lives in a single registry —
 `corrado_prog_desc_t` in [`usb-driver/corrado_prog.h`](usb-driver/corrado_prog.h)
 with the table in [`source/corrado_prog.c`](source/corrado_prog.c) — pairing
-each USB VID/PID with the model's identity and bulk-protocol parameters
-(endpoints, transfer block size, read/write/erase opcodes). Every per-OS
+each USB VID/PID with the model's identity, protocol family and transport
+parameters (endpoints, block size, read/write/erase opcodes). Every per-OS
 backend walks that table to find and drive an attached device; none of them
 carry hard-coded model constants any more.
 
-**Adding another programmer** that speaks the same minipro-style framing is a
-one-line entry in the `corrado_prog.c` table (plus a `corrado_prog_model_t`
-value and a udev line) — no backend edits. A unit that needs different framing
-supplies its own opcodes/endpoints/block size in the same descriptor.
+**Adding another programmer** in an existing family is a one-line entry in the
+`corrado_prog.c` table (plus a `corrado_prog_model_t` value and a udev line) —
+no backend edits. Adding a **new family** means one new protocol module (like
+`corrado_ch341.c`) plus a dispatch branch in the backends.
+
+> **Note on the GQ-4x / GQ-4x4 (Willem):** this MCUmall programmer was
+> evaluated but deliberately *not* added. It enumerates as a Cypress FX2 in
+> bootloader state (`0x04B4:0x8613`) and requires uploading a reverse-
+> engineered 8051 firmware blob over USB on every connection before any
+> read/write is possible — too device-specific to implement faithfully from
+> public sources without hardware to validate against.
 
 ## Dependencies
 
@@ -185,6 +210,7 @@ sudo usermod -aG plugdev "$USER"   # then log out/in
 
 ```sh
 corrado-eprom info                  # show the year/ECU/EPROM profile
+corrado-eprom list                  # list supported programmers (no device needed)
 corrado-eprom read   stock.bin      # dump the chip (back up first!)
 corrado-eprom write  mytune.bin     # program the chip, then auto-verify
 corrado-eprom verify mytune.bin     # compare chip against a file

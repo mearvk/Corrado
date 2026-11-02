@@ -24,3 +24,6 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="a466", ATTR{idProduct}=="0053", MODE="0666", 
 # Uncomment and set the real idProduct once verified, then flip probe=1 for
 # the T76 entry in source/corrado_prog.c to enable auto-detection.
 #SUBSYSTEM=="usb", ATTR{idVendor}=="a466", ATTR{idProduct}=="xxxx", MODE="0666", GROUP="plugdev"
+
+# WinChipHead CH341A USB-to-SPI programmer dongle (ch341a-spi family)
+SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", ATTR{idProduct}=="5512", MODE="0666", GROUP="plugdev"

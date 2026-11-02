@@ -21,6 +21,7 @@
 
 #include "corrado_usb.h"
 #include "corrado_prog.h"
+#include "corrado_ch341.h"
 
 #include <libusb-1.0/libusb.h>
 #include <stdlib.h>
@@ -150,6 +151,42 @@ static void put_le32(uint8_t *p, uint32_t v)
     p[3] = (uint8_t)((v >> 24) & 0xFF);
 }
 
+/* ---- CH341A SPI family: transport adapter + dispatch (see Linux backend) */
+static corrado_status_t ch341_bulk_out(void *ctx, uint8_t ep,
+                                       const uint8_t *buf, int len)
+{
+    corrado_usb_dev_t *d = (corrado_usb_dev_t *)ctx;
+    int moved = 0;
+    int r = libusb_bulk_transfer(d->h, ep, (unsigned char *)buf, len, &moved,
+                                 CORRADO_USB_TIMEOUT_MS);
+    if (r == LIBUSB_ERROR_TIMEOUT) return CORRADO_ERR_TIMEOUT;
+    if (r != 0 || moved != len)    return CORRADO_ERR_USB;
+    return CORRADO_OK;
+}
+
+static corrado_status_t ch341_bulk_in(void *ctx, uint8_t ep,
+                                      uint8_t *buf, int len)
+{
+    corrado_usb_dev_t *d = (corrado_usb_dev_t *)ctx;
+    int moved = 0;
+    int r = libusb_bulk_transfer(d->h, ep, buf, len, &moved,
+                                 CORRADO_USB_TIMEOUT_MS);
+    if (r == LIBUSB_ERROR_TIMEOUT) return CORRADO_ERR_TIMEOUT;
+    if (r != 0 || moved != len)    return CORRADO_ERR_USB;
+    return CORRADO_OK;
+}
+
+static corrado_ch341_io_t ch341_io_for(corrado_usb_dev_t *d)
+{
+    corrado_ch341_io_t io;
+    io.ctx = d;
+    io.ep_out = d->desc->ep_out;
+    io.ep_in = d->desc->ep_in;
+    io.bulk_out = ch341_bulk_out;
+    io.bulk_in = ch341_bulk_in;
+    return io;
+}
+
 /* Largest transfer block any registered model uses; sizes the write frame. */
 #define CORRADO_MAX_BLOCK 0x80
 
@@ -162,6 +199,10 @@ corrado_status_t corrado_usb_read(corrado_usb_dev_t *dev,
     corrado_status_t st;
 
     if (!dev || !img || !img->data) return CORRADO_ERR_ARG;
+    if (dev->desc->family == CORRADO_FAMILY_CH341A) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        return corrado_ch341_read(&io, dev->desc, img, cb, user);
+    }
     block = dev->desc->block;
 
     for (addr = 0; addr < img->size; addr += block) {
@@ -194,6 +235,10 @@ corrado_status_t corrado_usb_write(corrado_usb_dev_t *dev,
     corrado_image_t readback;
 
     if (!dev || !img || !img->data) return CORRADO_ERR_ARG;
+    if (dev->desc->family == CORRADO_FAMILY_CH341A) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        return corrado_ch341_write(&io, dev->desc, img, cb, user);
+    }
     block = dev->desc->block;
     if (block == 0 || block > CORRADO_MAX_BLOCK) return CORRADO_ERR_UNSUPPORTED;
 
@@ -232,6 +277,11 @@ corrado_status_t corrado_usb_blank_check(corrado_usb_dev_t *dev,
     corrado_status_t st;
     size_t i;
 
+    if (dev && dev->desc->family == CORRADO_FAMILY_CH341A) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        return corrado_ch341_blank_check(&io, dev->desc, type);
+    }
+
     st = corrado_image_alloc(&img, type);
     if (st != CORRADO_OK) return st;
 
@@ -252,6 +302,10 @@ corrado_status_t corrado_usb_erase(corrado_usb_dev_t *dev,
     corrado_status_t st;
 
     if (!dev) return CORRADO_ERR_ARG;
+    if (dev->desc->family == CORRADO_FAMILY_CH341A) {
+        corrado_ch341_io_t io = ch341_io_for(dev);
+        return corrado_ch341_erase(&io, dev->desc, type);
+    }
     if (corrado_eprom_size(type) == 0) return CORRADO_ERR_UNSUPPORTED;
 
     /*

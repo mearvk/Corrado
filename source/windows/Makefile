@@ -27,7 +27,7 @@ CPPFLAGS  += -I$(INCLUDE) -I$(COMMON) -I$(USBDIR) -I$(USBCOMMON)
 LDLIBS    += -lusb-1.0
 
 COMMON_SRC := $(COMMON)/corrado_eprom.c $(COMMON)/corrado_ops.c \
-              $(COMMON)/corrado_prog.c $(COMMON)/main.c
+              $(COMMON)/corrado_prog.c $(COMMON)/corrado_ch341.c $(COMMON)/main.c
 USB_SRC    := $(USBDIR)/corrado_usb_windows.c
 
 ifdef YEAR

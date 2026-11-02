@@ -68,6 +68,7 @@ static int usage(const char *argv0)
     fprintf(stderr,
         "Usage: %s <command> [args]\n"
         "  info                     show year/ECU/EPROM profile\n"
+        "  list                     list supported programmers (no device needed)\n"
         "  read   <out.bin>         dump the chip to a file\n"
         "  write  <in.bin> [--no-verify]  program the chip from a file\n"
         "  verify <ref.bin>         compare chip against a file\n"
@@ -103,6 +104,26 @@ static void prompt_swap(const char *msg)
     printf("\n>>> %s\n>>> Insert the chip and press Enter to continue...", msg);
     fflush(stdout);
     { int c; while ((c = getchar()) != '\n' && c != EOF) { } }
+}
+
+/* list sub-command: print the supported-programmer registry; no hardware. */
+static int cmd_list(void)
+{
+    const corrado_prog_desc_t *d;
+    printf("Supported programmers (%zu):\n", corrado_prog_count());
+    printf("  %-13s %-11s %-9s %-10s %s\n",
+           "MODEL", "FAMILY", "USB ID", "BLOCK", "AUTO-DETECT");
+    for (d = corrado_prog_table(); d->name; ++d) {
+        char usbid[16];
+        if (d->probe)
+            snprintf(usbid, sizeof(usbid), "%04x:%04x", d->vid, d->pid);
+        else
+            snprintf(usbid, sizeof(usbid), "%04x:????", d->vid);
+        printf("  %-13s %-11s %-9s %4u bytes  %s\n",
+               d->name, corrado_prog_family_name(d->family), usbid,
+               d->block, d->probe ? "yes" : "no (PID unconfirmed)");
+    }
+    return 0;
 }
 
 /* checksum sub-command works on a file only; no hardware needed. */
@@ -141,6 +162,9 @@ int main(int argc, char **argv)
     if (strcmp(argv[1], "info") == 0) {
         print_banner();
         return 0;
+    }
+    if (strcmp(argv[1], "list") == 0) {
+        return cmd_list();
     }
     if (strcmp(argv[1], "checksum") == 0) {
         if (argc < 3) return usage(argv[0]);
